@@ -90,13 +90,13 @@ void setup() {
 float currentOutput = currentmeasure;
 
 //POWER COMPUTATION - Through computation
-float powerOutput     = voltageOutput*currentOutput;
-float powerInput      = powerOutput/Efficiency;
-float currentInput = powerInput/voltageInput;
+//float powerOutput     = voltageOutput*currentOutput;
+//float powerInput      = powerOutput/Efficiency;
+//float currentInput = powerInput/voltageInput;
 
 //STATE OF CHARGE - Battery Percentage
-float batteryPercent  = ((voltageOutput-voltageBatteryMin)/(voltageBatteryMax-voltageBatteryMin))*101;
-float batteryPercent  = constrain(batteryPercent,0,100);
+//float batteryPercent  = ((voltageOutput-voltageBatteryMin)/(voltageBatteryMax-voltageBatteryMin))*101;
+//float batteryPercent  = constrain(batteryPercent,0,100);
 
 void loop() {
   if (loop_trigger == 1){ // FAST LOOP (1kHZ) (for changing duty cycle)
@@ -226,18 +226,3 @@ float saturation( float sat_input, float uplim, float lowlim) { // Saturation fu
   return sat_input;
 }
 
-void predictivePWM(){                                                                //PREDICTIVE PWM ALGORITHM 
-  if(voltageInput<=0){PPWM=0;}                                                       //Prevents Indefinite Answer when voltageInput is zero
-  else{PPWM =(PPWM_margin*pwmMax*voltageOutput)/(100.00*voltageInput);}              //Compute for predictive PWM Floor and store in variable
-  PPWM = constrain(PPWM,0,pwmMaxLimited);
-}   
-
-void PWM_Modulation(){
-  if(output_Mode==0){pwm_out = constrain(pwm_out,0,pwmMaxLimited);}                          //PSU MODE PWM = PWM OVERFLOW PROTECTION (limit floor to 0% and ceiling to maximim allowable duty cycle)
-  else{
-    predictivePWM();                                                                 //Runs and computes for predictive pwm floor
-    pwm_out = constrain(pwm_out,PPWM,pwmMaxLimited);                                         //CHARGER MODE PWM - limit floor to PPWM and ceiling to maximim allowable duty cycle)                                       
-  } 
-  ledcWrite(pwmChannel,PWM);                                                         //Set PWM duty cycle and write to GPIO when buck is enabled
-  //buck_Enable();                                                                     //Turn on MPPT buck (IR2104)
-}
