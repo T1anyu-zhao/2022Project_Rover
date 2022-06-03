@@ -20,7 +20,7 @@ float V_in;
 boolean input_switch;
 String dataString;
 
-float vpd,vref,iL,current_mA; // Measurement Variables
+float vpd,vref,iL; // Measurement Variables
 unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
 
 int avgCountCS = 4; //current sensor sampling count
@@ -114,7 +114,7 @@ void loop() {
           pwm_out = 0; // no PWM
       }
       current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
-      iL = current_mA/1000.0; //inductor current in Amperes
+      iL = current_measure/1000.0; //inductor current in Amperes
       pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
       analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
       output_current_sum = output_current + iL; //summing current for averaging
