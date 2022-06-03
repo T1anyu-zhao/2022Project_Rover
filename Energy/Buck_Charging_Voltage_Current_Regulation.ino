@@ -26,7 +26,7 @@ float vpd,vref,iL; // Measurement Variables
 unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
 
 float vb = 0;
-float output_current = 0;
+//float output_current = 0;
 
 
 void setup() {
