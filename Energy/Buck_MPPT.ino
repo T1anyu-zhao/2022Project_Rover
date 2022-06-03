@@ -18,13 +18,17 @@ float current_measure;
 float pwm_out;
 float V_in;
 boolean input_switch;
-int state_num=0,next_state;
 String dataString;
 
-int pwm_out                   = 0,           // SYSTEM PARAMETER -
+float vpd,vref,iL,current_mA; // Measurement Variables
+unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
 
-float voltageValue = 0;
-float currentValue = 0;
+int avgCountCS = 4; //current sensor sampling count
+
+int pwm_out = 0,           // SYSTEM PARAMETER -
+
+float vb = 0;
+float output_current = 0;
 float Power_now = 0, Power_anc = 0, voltage_anc = 0;
 float delta = 1;
 
@@ -50,7 +54,6 @@ void setup() {
     SD.remove("SD_Test.csv");
   }
 
-  
   noInterrupts(); //disable all interrupts
   analogReference(EXTERNAL); // We are using an external analogue reference for the ADC
 
@@ -80,58 +83,72 @@ void setup() {
 
 }
 
-float currentOutput = currentmeasure;
-
-//POWER COMPUTATION - Through computation
-float powerOutput     = voltageOutput*currentOutput;
-float powerInput      = powerOutput/Efficiency;
-float currentInput = powerInput/voltageInput;
-float currentCharging         = 30.0000,     //   USER PARAMETER - Maximum Charging Current (A - Output)
-
-//STATE OF CHARGE - Battery Percentage
-float batteryPercent  = ((voltageOutput-voltageBatteryMin)/(voltageBatteryMax-voltageBatteryMin))*101;
-float batteryPercent  = constrain(batteryPercent,0,100);
-
 void loop() {
   if (loop_trigger == 1){ // FAST LOOP (1kHZ) (for changing duty cycle)
-      state_num = next_state; //state transition
-      V_in = analogRead(A0)*4.096/1.03; //check the battery voltage (1.03 is a correction for measurement error, you need to check this works for you)
-      if (voltageOutput < 4500 || VoltageOutput > 5200) { //Checking for Error states (low or high input voltage)
+      //assume to operate in Buck mode, maybe add code to identify boost mode (incorrect mode) later
+
+      // Make the initial sampling operations for the circuit measurements
+  
+      sensorValue0 = analogRead(A0); //sample Vb (output voltage)
+      //sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
+      sensorValue2 = 10.0/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
+      sensorValue3 = analogRead(A3); //sample Vpd 
+      
+      // Process the values so they are a bit more usable/readable
+      // The analogRead process gives a value between 0 and 1023 
+      // representing a voltage between 0 and the analogue reference which is 4.096V
+  
+      vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts (output voltage)
+      //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
+
+      // The inductor current is in mA from the sensor so we need to convert to amps.
+      // For open loop control the duty cycle reference is calculated from the sensor
+      // differently from the Vref, this time scaled between zero and 1.
+
+      pwm_out = sensorValue2 * (1.0 / 1023.0);  
+  
+      if (voltageOutput < 4.50) { //Checking for Error states (input voltage lower than battery minimum charging voltage)
           digitalWrite(7,true); //turn on the red LED
           pwm_out = 0; // no PWM
       }
       current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
+      iL = current_mA/1000.0; //inductor current in Amperes
       pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
       analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
+      output_current_sum = output_current + iL; //summing current for averaging
       int_count++; //count how many interrupts since this was last reset to zero
       loop_trigger = 0; //reset the trigger and move on with life
   }
-  
+
   if (int_count == 1000) { // SLOW LOOP (1Hz) (for MPPT and relay operation)
     input_switch = digitalRead(2); //get the OL/CL switch status
     
+    output_current  = output_current_sum/1000; //averaging current
+    
     //MPPT
-    Power_now = voltageValue * currentValue;
+    Power_now = vb * output_current; //assume current ripple small? Do we need to get an average value for inductor/output current? How? Saving measurements to SD cards then take out?
     if (Power_now > Power_anc)
     { if (voltageValue > voltage_anc)
-        pwm = pwm - delta;
+        pwm_out = pwm_out - delta;
       else
-        pwm = pwm + delta;
+        pwm_out = pwm_out + delta;
     }
     else
     {
       if (voltageValue > voltage_anc)
-        pwm = pwm + delta;
+        pwm_out = pwm_out + delta;
       else
-        pwm = pwm - delta;
+        pwm_out = pwm_out - delta;
     }
     Power_anc = Power_now;
-    voltage_anc = voltageValue;
+    voltage_anc = vb;
     pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
 
-    analogWrite(6, pwm);
+    analogWrite(6, pwm_out);
     
-    dataString = String(state_num) + "," + String(V_in) + "," + String(current_measure); //build a datastring for the CSV file
+    dataString = String(V_b) + "," + String(output_current); //build a datastring for the CSV file
     Serial.println(dataString); // send it to serial as well in case a computer is connected
     File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
     if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
