@@ -16,23 +16,18 @@ unsigned int int_count = 0; // a variables to count the interrupts. Used for pro
 float Ts = 0.001; //1 kHz control frequency.
 float current_measure;
 float pwm_out;
-float V_in;
 boolean input_switch;
 int state_num=0,next_state;
 String dataString;
 
-float PPWM_margin             = 99.5000,    //  CALIB PARAMETER - Minimum Operating Duty Cycle for Predictive PWM (%)
-float PWM_MaxDC               = 97.0000,    //  CALIB PARAMETER - Maximum Operating Duty Cycle (%) 90%-97% is good
-int pwmMax                = 0,           // SYSTEM PARAMETER -?
-int pwmMaxLimited         = 0,           // SYSTEM PARAMETER -?
-int pwm_out                   = 0,           // SYSTEM PARAMETER -
-int PPWM                  = 0,           // SYSTEM PARAMETER -
-int pwmChannel            = 0,           // SYSTEM PARAMETER -
+int pwm_out = 0,           // SYSTEM PARAMETER -
 
-float voltageBatteryMin = 4500;
-float voltageBatteryMax = 5200;
-float powerInputPrev;
-float voltageInputPrev;
+float vpd,vref,iL; // Measurement Variables
+unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
+
+float vb = 0;
+float output_current = 0;
+
 
 void setup() {
   //Some General Setup Stuff
@@ -87,39 +82,52 @@ void setup() {
 
 }
 
-float currentOutput = currentmeasure;
-
-//POWER COMPUTATION - Through computation
-//float powerOutput     = voltageOutput*currentOutput;
-//float powerInput      = powerOutput/Efficiency;
-//float currentInput = powerInput/voltageInput;
-
-//STATE OF CHARGE - Battery Percentage
-//float batteryPercent  = ((voltageOutput-voltageBatteryMin)/(voltageBatteryMax-voltageBatteryMin))*101;
-//float batteryPercent  = constrain(batteryPercent,0,100);
-
 void loop() {
   if (loop_trigger == 1){ // FAST LOOP (1kHZ) (for changing duty cycle)
       state_num = next_state; //state transition
-      V_in = analogRead(A0)*4.096/1.03; //check the battery voltage (1.03 is a correction for measurement error, you need to check this works for you)
-      if (V_in < 4500 || V_in > 5200) { //Checking for Error states (low or high input voltage)
-          state_num = 5; //go directly to jail
-          next_state = 5; // stay in jail
+
+      // Make the initial sampling operations for the circuit measurements
+  
+      sensorValue0 = analogRead(A0); //sample Vb (output voltage)
+      //sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
+      sensorValue2 = 5.0/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
+      sensorValue3 = analogRead(A3); //sample Vpd 
+      
+      // Process the values so they are a bit more usable/readable
+      // The analogRead process gives a value between 0 and 1023 
+      // representing a voltage between 0 and the analogue reference which is 4.096V
+  
+      vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts (output voltage)
+      //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
+
+      // The inductor current is in mA from the sensor so we need to convert to amps.
+      // For open loop control the duty cycle reference is calculated from the sensor
+      // differently from the Vref, this time scaled between zero and 1.
+
+      pwm_out = sensorValue2 * (1.0 / 1023.0);  
+
+      if (vb < 4.50 || vb > 5.2) { //Checking for Error states (low or high input voltage)
+          state_num = 2; //go directly to jail
+          next_state = 2; // stay in jail
           digitalWrite(7,true); //turn on the red LED
           digitalWrite(9, HIGH); //relay off
-          pwm_out = 0; // no PWM
+          //pwm_out = 0; // no PWM?
       }
+      
       current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
-      switch (state_num){
-        case 1:{
-           Buck_2A(); //open loop buck to keep constant current (2A)
-          }
-        case 2:{
-           Buck_OLCL(); //closd loop buck to keep constant voltage (ser Vref to 5V)
-          }
-      }
-      //pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
-      //analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
+      iL = current_measure/1000.0; //inductor current in Amperes
+      
+      //closed-loop buck
+      current_limit = 2; // Buck has a higher current limit
+      ev = vref - vb;  //voltage error at this time
+      cv = pidv(ev);  //voltage pid
+      cv = saturation(cv, current_limit, 0); //current demand saturation
+      ei = cv-iL; //current error, not needed average inductor current?
+      pwm_out = pidi(ei);  //current pid
+      pwm_out = saturation(pwm_out,0.99,0.01);  //duty_cycle saturation
+      analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
       int_count++; //count how many interrupts since this was last reset to zero
       loop_trigger = 0; //reset the trigger and move on with life
   }
@@ -129,59 +137,33 @@ void loop() {
     switch (state_num) { // STATE MACHINE
       case 0:{ // Start state (no current, no LEDs)
         pwm_out = 0;
-        if (input_switch == 1) { // if switch, move to state 1
+        if (input_switch == 1 || vb < 4.50 || vb > 5.2) { // if switch and voltages satisfy requirements, move to state 1
           next_state = 1;
-          digitalWrite(8,true);
           digitalWrite(9, LOW); //relay on
         } else { // otherwise stay put
           next_state = 0;
-          digitalWrite(8,false);
           digitalWrite(9, HIGH); //relay off
         }
         break;
       }
-      case 1:{ // PWM State 1 CC charging
-        pwm_out = 0.5;
-        if (V_in < 5000) { // if below 5V we go back to this state
-          next_state = 1;
-          digitalWrite(8,true);
-          digitalWrite(9, LOW); //relay on          
-        } else { // otherwise go to state 2
+      case 1:{ // Charging State
+        if (vb < 4.50 || vb > 5.2) { // if below 4.5V or above 5.2V go to state 2
           next_state = 2;
-          digitalWrite(8,false);
+          digitalWrite(9, HIGH); //relay off          
+        } else { // otherwise stay in the same state
+          next_state = 1;
           digitalWrite(9, LOW); //relay on  
         }
         if(input_switch == 0){ // UNLESS the switch = 0, then go back to start
           next_state = 0;
-          digitalWrite(8,false);
           digitalWrite(9, HIGH); //relay off  
         }
         break;
       }
-      case 2:{ // PWM State 2 CV charging
-        pwm_out = 0.75;
-        if (V_in >= 5000 && V_in <= 5200) { // If v in is above 5V and below 5.2V then we stay here
-          next_state = 2;
-          digitalWrite(8,false);
-          digitalWrite(9, LOW); //relay on
-        } 
-        else { // Or move to PWM state 5
-          next_state = 5;
-          digitalWrite(8,false);
-          digitalWrite(9, HIGH); //relay off
-        }
-        if(input_switch == 0){ // UNLESS the switch = 0, then go back to start
-          next_state = 0;
-          digitalWrite(8,false);
-          digitalWrite(9, HIGH); //relay off
-        }
-        break;        
-      }
-      case 5: { // ERROR (and charge termination) state RED led and no current 
+      case 2: { // ERROR (and charge termination) state RED led and no current 
         pwm_out = 0;
-        next_state = 5; // Always stay here
+        next_state = 2; // Always stay here
         digitalWrite(7,true);
-        digitalWrite(8,false);
         digitalWrite(9, HIGH); //relay off
         if(input_switch == 0){ //UNLESS the switch = 0, then go back to start
           next_state = 0;
@@ -193,14 +175,14 @@ void loop() {
       default :{ // Should not end up here ....
         Serial.println("Boop");
         pwm_out = 0;
-        next_state = 5; // So if we are here, we go to error
+        next_state = 2; // So if we are here, we go to error
         digitalWrite(7,true);
         digitalWrite(9, HIGH); //relay off
       }
       
     }
     
-    dataString = String(state_num) + "," + String(V_in) + "," + String(current_measure); //build a datastring for the CSV file
+    dataString = String(state_num) + "," + String(vb) + "," + String(current_measure); //build a datastring for the CSV file
     Serial.println(dataString); // send it to serial as well in case a computer is connected
     File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
     if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
@@ -226,3 +208,52 @@ float saturation( float sat_input, float uplim, float lowlim) { // Saturation fu
   return sat_input;
 }
 
+float pidv( float pid_input){
+  float e_integration;
+  e0v = pid_input;
+  e_integration = e0v;
+ 
+  //anti-windup, if last-time pid output reaches the limitation, this time there won't be any intergrations.
+  if(u1v >= uv_max) {
+    e_integration = 0;
+  } else if (u1v <= uv_min) {
+    e_integration = 0;
+  }
+
+  delta_uv = kpv*(e0v-e1v) + kiv*Ts*e_integration + kdv/Ts*(e0v-2*e1v+e2v); //incremental PID programming avoids integrations.there is another PID program called positional PID.
+  u0v = u1v + delta_uv;  //this time's control output
+
+  //output limitation
+  saturation(u0v,uv_max,uv_min);
+  
+  u1v = u0v; //update last time's control output
+  e2v = e1v; //update last last time's error
+  e1v = e0v; // update last time's error
+  return u0v;
+}
+
+// This is a PID controller for the current
+
+float pidi(float pid_input){
+  float e_integration;
+  e0i = pid_input;
+  e_integration=e0i;
+  
+  //anti-windup
+  if(u1i >= ui_max){
+    e_integration = 0;
+  } else if (u1i <= ui_min) {
+    e_integration = 0;
+  }
+  
+  delta_ui = kpi*(e0i-e1i) + kii*Ts*e_integration + kdi/Ts*(e0i-2*e1i+e2i); //incremental PID programming avoids integrations.
+  u0i = u1i + delta_ui;  //this time's control output
+
+  //output limitation
+  saturation(u0i,ui_max,ui_min);
+  
+  u1i = u0i; //update last time's control output
+  e2i = e1i; //update last last time's error
+  e1i = e0i; // update last time's error
+  return u0i;
+}
