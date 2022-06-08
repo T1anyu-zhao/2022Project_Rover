@@ -15,14 +15,21 @@ unsigned int loop_trigger;
 unsigned int int_count = 0; // a variables to count the interrupts. Used for program debugging.
 float Ts = 0.001; //1 kHz control frequency.
 float current_measure;
-float pwm_out;
+float pwm_out = 0;
 boolean input_switch;
 int state_num=0,next_state;
 String dataString;
 
-int pwm_out = 0,           // SYSTEM PARAMETER -
 
 float vpd,vref,iL; // Measurement Variables
+float ev=0,cv=0,ei=0,oc=0; //internal signals
+float kpv=0.05024,kiv=15.78,kdv=0; // voltage pid.
+float u0v,u1v,delta_uv,e0v,e1v,e2v; // u->output; e->error; 0->this time; 1->last time; 2->last last time
+float kpi=0.02512,kii=39.4,kdi=0; // current pid.
+float u0i,u1i,delta_ui,e0i,e1i,e2i; // Internal values for the current controller
+float uv_max=4, uv_min=0; //anti-windup limitation
+float ui_max=1, ui_min=0; //anti-windup limitation
+float current_limit = 2.0;
 unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
 
 float vb = 0;
@@ -120,7 +127,7 @@ void loop() {
       iL = current_measure/1000.0; //inductor current in Amperes
       
       //closed-loop buck
-      current_limit = 2; // Buck has a higher current limit
+      //current_limit = 2; // Buck has a higher current limit
       ev = vref - vb;  //voltage error at this time
       cv = pidv(ev);  //voltage pid
       cv = saturation(cv, current_limit, 0); //current demand saturation
