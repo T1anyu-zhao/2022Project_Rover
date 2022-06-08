@@ -15,20 +15,17 @@ unsigned int loop_trigger;
 unsigned int int_count = 0; // a variables to count the interrupts. Used for program debugging.
 float Ts = 0.001; //1 kHz control frequency.
 float current_measure;
-float pwm_out;
-float V_in;
+float pwm_out=0;
 boolean input_switch;
 String dataString;
 
 float vpd,vref,iL; // Measurement Variables
 unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
 
-int avgCountCS = 4; //current sensor sampling count
-
-int pwm_out = 0,           // SYSTEM PARAMETER -
 
 float vb = 0;
 float output_current = 0;
+float output_current_sum = 0;
 float Power_now = 0, Power_anc = 0, voltage_anc = 0;
 float delta = 1;
 
@@ -91,7 +88,7 @@ void loop() {
   
       sensorValue0 = analogRead(A0); //sample Vb (output voltage)
       //sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
-      sensorValue2 = 10.0/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
+      sensorValue2 = 3.3/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
       sensorValue3 = analogRead(A3); //sample Vpd 
       
       // Process the values so they are a bit more usable/readable
@@ -109,10 +106,10 @@ void loop() {
 
       pwm_out = sensorValue2 * (1.0 / 1023.0);  
   
-      if (voltageOutput < 4.50) { //Checking for Error states (input voltage lower than battery minimum charging voltage)
-          digitalWrite(7,true); //turn on the red LED
-          pwm_out = 0; // no PWM
-      }
+      //if (vb < 3.3) { //Checking for Error states (input voltage lower than battery minimum charging voltage)
+          //digitalWrite(7,true); //turn on the red LED
+          //pwm_out = 0; // no PWM
+      //}
       current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
       iL = current_measure/1000.0; //inductor current in Amperes
       pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
@@ -130,14 +127,14 @@ void loop() {
     //MPPT
     Power_now = vb * output_current; //assume current ripple small? Do we need to get an average value for inductor/output current? How? Saving measurements to SD cards then take out?
     if (Power_now > Power_anc)
-    { if (voltageValue > voltage_anc)
+    { if (vb > voltage_anc)
         pwm_out = pwm_out - delta;
       else
         pwm_out = pwm_out + delta;
     }
     else
     {
-      if (voltageValue > voltage_anc)
+      if (vb > voltage_anc)
         pwm_out = pwm_out + delta;
       else
         pwm_out = pwm_out - delta;
@@ -148,7 +145,7 @@ void loop() {
 
     analogWrite(6, pwm_out);
     
-    dataString = String(V_b) + "," + String(output_current); //build a datastring for the CSV file
+    dataString = String(vb) + "," + String(output_current); //build a datastring for the CSV file
     Serial.println(dataString); // send it to serial as well in case a computer is connected
     File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
     if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
