@@ -106,7 +106,8 @@ void loop() {
   
       vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts (output voltage)
       //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-      vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      vref = 5.0; //can we defined vref to be certain constant like that?
       vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
 
       // The inductor current is in mA from the sensor so we need to convert to amps.
@@ -123,7 +124,7 @@ void loop() {
           //pwm_out = 0; // no PWM?
       }
       
-      current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
+      current_measure = ina219.getCurrent_mA(); // sample the inductor current (via the sensor chip)
       iL = current_measure/1000.0; //inductor current in Amperes
       
       //closed-loop buck
