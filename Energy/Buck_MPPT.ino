@@ -97,14 +97,14 @@ void loop() {
   
       vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts (output voltage)
       //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-      vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
       vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
 
       // The inductor current is in mA from the sensor so we need to convert to amps.
       // For open loop control the duty cycle reference is calculated from the sensor
       // differently from the Vref, this time scaled between zero and 1.
 
-      pwm_out = sensorValue2 * (1.0 / 1023.0);  
+     // pwm_out = sensorValue2 * (1.0 / 1023.0);  
   
       //if (vb < 3.3) { //Checking for Error states (input voltage lower than battery minimum charging voltage)
           //digitalWrite(7,true); //turn on the red LED
@@ -112,8 +112,8 @@ void loop() {
       //}
       current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
       iL = current_measure/1000.0; //inductor current in Amperes
-      pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
-      analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
+      //pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
+      //analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
       output_current_sum = output_current + iL; //summing current for averaging
       int_count++; //count how many interrupts since this was last reset to zero
       loop_trigger = 0; //reset the trigger and move on with life
@@ -143,7 +143,7 @@ void loop() {
     voltage_anc = vb;
     pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
 
-    analogWrite(6, pwm_out);
+    analogWrite(6, (int)(255 - pwm_out * 255));
     
     dataString = String(vb) + "," + String(output_current); //build a datastring for the CSV file
     Serial.println(dataString); // send it to serial as well in case a computer is connected
