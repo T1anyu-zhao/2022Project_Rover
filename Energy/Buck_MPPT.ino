@@ -15,7 +15,7 @@ unsigned int loop_trigger;
 unsigned int int_count = 0; // a variables to count the interrupts. Used for program debugging.
 float Ts = 0.001; //1 kHz control frequency.
 float current_measure;
-float pwm_out=0;
+float pwm_out=0.8;
 boolean input_switch;
 String dataString;
 
@@ -27,7 +27,7 @@ float vb = 0;
 float output_current = 0;
 float output_current_sum = 0;
 float Power_now = 0, Power_anc = 0, voltage_anc = 0;
-float delta = 1;
+float delta = 0.01;
 
 void setup() {
   //Some General Setup Stuff
@@ -39,17 +39,17 @@ void setup() {
 
 
   //Check for the SD Card
-  Serial.println("\nInitializing SD card...");
-  if (!SD.begin(chipSelect)) {
-    Serial.println("* is a card inserted?");
-    while (true) {} //It will stick here FOREVER if no SD is in on boot
-  } else {
-    Serial.println("Wiring is correct and a card is present.");
-  }
+  //Serial.println("\nInitializing SD card...");
+  //if (!SD.begin(chipSelect)) {
+    //Serial.println("* is a card inserted?");
+    //while (true) {} //It will stick here FOREVER if no SD is in on boot
+  //} else {
+    //Serial.println("Wiring is correct and a card is present.");
+  //}
 
-  if (SD.exists("SD_Test.csv")) { // Wipe the datalog when starting
-    SD.remove("SD_Test.csv");
-  }
+  //if (SD.exists("SD_Test.csv")) { // Wipe the datalog when starting
+    //SD.remove("SD_Test.csv");
+  //}
 
   noInterrupts(); //disable all interrupts
   analogReference(EXTERNAL); // We are using an external analogue reference for the ADC
@@ -87,8 +87,8 @@ void loop() {
       // Make the initial sampling operations for the circuit measurements
   
       sensorValue0 = analogRead(A0); //sample Vb (output voltage)
-      //sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
-      sensorValue2 = 3.3/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
+      sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
+      //sensorValue2 = 3.3/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
       sensorValue3 = analogRead(A3); //sample Vpd 
       
       // Process the values so they are a bit more usable/readable
@@ -97,7 +97,7 @@ void loop() {
   
       vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts (output voltage)
       //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-      //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
       vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
 
       // The inductor current is in mA from the sensor so we need to convert to amps.
@@ -112,8 +112,8 @@ void loop() {
       //}
       current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
       iL = current_measure/1000.0; //inductor current in Amperes
-      //pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
-      //analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
+      //pwm_out = saturation(pwm_out, 0.98, 0.02); //duty_cycle saturation
+      analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
       output_current_sum = output_current + iL; //summing current for averaging
       int_count++; //count how many interrupts since this was last reset to zero
       loop_trigger = 0; //reset the trigger and move on with life
@@ -141,19 +141,19 @@ void loop() {
     }
     Power_anc = Power_now;
     voltage_anc = vb;
-    pwm_out = saturation(pwm_out, 0.99, 0.01); //duty_cycle saturation
+    pwm_out = saturation(pwm_out, 0.98, 0.02); //duty_cycle saturation
 
     analogWrite(6, (int)(255 - pwm_out * 255));
     
-    dataString = String(vb) + "," + String(output_current); //build a datastring for the CSV file
-    Serial.println(dataString); // send it to serial as well in case a computer is connected
-    File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
-    if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
-      dataFile.println(dataString); // print the data
-    } else {
-      Serial.println("File not open"); //otherwise print an error
-    }
-    dataFile.close(); // close the file
+    //dataString = String(vb) + "," + String(output_current); //build a datastring for the CSV file
+    //Serial.println(dataString); // send it to serial as well in case a computer is connected
+    //File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
+    //if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
+      //dataFile.println(dataString); // print the data
+    //} else {
+      //Serial.println("File not open"); //otherwise print an error
+    //}
+    //dataFile.close(); // close the file
     int_count = 0; // reset the interrupt count so we dont come back here for 1000ms
   }
 }
