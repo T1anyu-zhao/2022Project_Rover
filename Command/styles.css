@@ -1,0 +1,140 @@
+body {
+    background: radial-gradient(circle at bottom, #00003B 0, black 100%);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.stars {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 1px;
+    width: 1px;
+    background-color: white;
+    border-radius: 100%;
+    box-shadow: -36vw -40vh 3px 0px white,49vw 4vh 1px 2px white,-49vw -25vh 1px 0px white,
+    21vw 18vh 1px 1px white,-16vw -6vh 3px 2px white,23vw -33vh 3px 2px white,
+    24vw -5vh 2px 0px white,26vw -10vh 0px 2px white,1vw -34vh 3px 0px white,
+    -2vw 46vh 2px 0px white,-35vw 10vh 2px 0px white,14vw -50vh 2px 0px white,
+    -8vw -2vh 1px 0px white,24vw 38vh 0px 0px white,-3vw -12vh 3px 3px white,
+    25vw -10vh 1px 3px white,19vw -10vh 0px 0px white,-13vw 13vh 2px 3px white,
+    38vw -30vh 1px 2px white,33vw 15vh 3px 0px white,-30vw 47vh 2px 1px white,
+    49vw -46vh 1px 1px white,-39vw 47vh 1px 2px white,-43vw -45vh 0px 3px white,
+    -9vw -41vh 1px 1px white,20vw 31vh 3px 1px white,42vw -7vh 0px 1px white,
+    -38vw -3vh 3px 0px white,19vw -18vh 3px 1px white,49vw -35vh 2px 0px white,
+    17vw -36vh 3px 0px white,-15vw -24vh 3px 0px white,37vw 17vh 2px 0px white,
+    38vw 31vh 0px 3px white,32vw -43vh 3px 3px white,-46vw -20vh 2px 3px white,
+    -16vw -6vh 0px 0px white,-41vw 44vh 0px 3px white,-13vw 22vh 3px 1px white,
+    29vw 33vh 2px 0px white,-19vw -40vh 0px 2px white,30vw -40vh 1px 2px white,
+    16vw -42vh 2px 0px white,27vw -25vh 0px 1px white,-4vw 50vh 0px 3px white,
+    -48vw 14vh 0px 1px white,-5vw 24vh 3px 1px white,38vw -19vh 3px 2px white,
+    45vw -29vh 2px 2px white,-25vw -7vh 3px 0px white,-5vw -41vh 3px 0px white,
+    -13vw -43vh 3px 1px white,41vw -41vh 0px 1px white,43vw 20vh 0px 1px white,
+    15vw -11vh 0px 1px white,21vw 38vh 0px 3px white,-15vw 18vh 1px 1px white,
+    -31vw -28vh 3px 0px white,30vw 28vh 0px 2px white,-40vw -42vh 0px 3px white,
+    -30vw 48vh 1px 3px white,15vw 21vh 1px 0px white,26vw 6vh 0px 3px white,
+    -11vw -17vh 0px 3px white,-2vw -7vh 3px 3px white,-24vw -43vh 0px 0px white,
+    46vw 20vh 1px 2px white,-28vw 6vh 2px 0px white,-12vw -35vh 2px 3px white,
+    21vw 1vh 1px 2px white,-45vw 42vh 2px 2px white,20vw -30vh 1px 3px white,
+    -45vw 2vh 1px 2px white,-9vw 36vh 3px 3px white,3vw 20vh 2px 2px white,
+    40vw 5vh 3px 1px white,31vw -33vh 0px 1px white,23vw 34vh 3px 3px white,
+    -20vw 9vh 3px 0px white,5vw 34vh 0px 3px white,-44vw 49vh 2px 2px white,
+    25vw 4vh 3px 1px white,41vw 44vh 0px 2px white,-15vw 21vh 3px 2px white,
+    -47vw -15vh 2px 2px white,-7vw 48vh 1px 2px white,1vw -35vh 2px 0px white,
+    -48vw 8vh 3px 1px white,25vw -39vh 0px 0px white,32vw 35vh 0px 3px white,
+    9vw -21vh 1px 1px white,-23vw 23vh 1px 0px white,-1vw 44vh 0px 1px white,
+    -12vw 42vh 2px 3px white,42vw -2vh 3px 0px white,1vw 7vh 3px 2px white,
+    -4vw 30vh 2px 3px white,-32vw -11vh 1px 0px white,-12vw -35vh 1px 1px white,18vw -14vh 0px 3px white;
+}
+
+h1 {
+    color: white;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    text-align: center;
+    font-size: 250%;
+}
+
+.movement {
+    background-color: black;
+    border: 3px solid yellow;
+    color: yellow;
+    padding: none;
+    width: 100px;
+    height: 60px;
+    text-align: center;
+    text-decoration: none;
+    font-size: xx-large;
+    margin: auto;
+    border-radius: 10%;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    transition-duration: 0.4s;
+}
+
+.forward {
+    position: absolute; right: 20%; top: 40%;
+}
+
+.forward:hover {
+    background-color: yellow;
+    border: none;
+    color: black;
+}
+
+.backward {
+    position: absolute; right: 20%; top: 60%;
+}
+
+.backward:hover {
+    background-color: yellow;
+    border: none;
+    color: black;
+}
+
+.right {
+    position: absolute; right: 10%; top: 50%;
+}
+
+.right:hover {
+    background-color: yellow;
+    border: none;
+    color: black;
+}
+
+.left {
+    position: absolute; right: 30%; top: 50%;
+}
+
+.left:hover {
+    background-color: yellow;
+    border: none;
+    color: black;
+}
+
+.battery {
+    background-color: darkgreen;
+    border: 4px solid darkgoldenrod;
+    color: white;
+    padding: 10px;
+    width: 100px;
+    text-align: center;
+    text-decoration: none;
+    font-size: large;
+    margin: auto;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    position: absolute; left: 15%; top: 3.5%;
+}
+
+.map {
+    background-color: transparent;
+    border: 3px solid yellow;
+    color: white;
+    padding: 10px;
+    width: 750px;
+    height: 500px;
+    text-align: center;
+    text-decoration: none;
+    font-size: xx-large;
+    margin: auto;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    position: absolute; left: 5%; top: 20%;
+}

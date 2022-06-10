@@ -1,19 +1,10 @@
-let http = require('http');
-let fs = require('fs');
-
-let handleRequest = (request, response) => {
-    response.writeHead(200, {
-        'Content-Type': 'text/html'
-    });
-    fs.readFile('./index.html', null, function (error, data) {
-        if (error) {
-            response.writeHead(404);
-            respone.write('Whoops! File not found!');
-        } else {
-            response.write(data);
-        }
-        response.end();
-    });
-};
-
-http.createServer(handleRequest).listen(8000); 
+var express = require('express');
+var server = express();
+server.get('/', function(req, res) {
+ res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/index.html');
+});
+server.get('/styles.css', function(req, res) {
+ res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/styles.css');
+});
+console.log('Server is running on port 8000');
+server.listen(8000,'localhost');
