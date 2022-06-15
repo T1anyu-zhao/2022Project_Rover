@@ -17,23 +17,21 @@ float Ts = 0.001; //1 kHz control frequency.
 float current_measure;
 float pwm_out = 0;
 boolean input_switch;
-int state_num=0,next_state;
 String dataString;
+
+//float current_limit = 2.0;
+//float oc = 0;
+//float dutyref;
 
 
 float vpd,vref,iL; // Measurement Variables
-float ev=0,cv=0,ei=0,oc=0; //internal signals
-float kpv=0.05024,kiv=15.78,kdv=0; // voltage pid.
-float u0v,u1v,delta_uv,e0v,e1v,e2v; // u->output; e->error; 0->this time; 1->last time; 2->last last time
-float kpi=0.02512,kii=39.4,kdi=0; // current pid.
-float u0i,u1i,delta_ui,e0i,e1i,e2i; // Internal values for the current controller
-float uv_max=4, uv_min=0; //anti-windup limitation
-float ui_max=1, ui_min=0; //anti-windup limitation
-float current_limit = 2.0;
 unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
 
 float vb = 0;
 //float output_current = 0;
+
+float input_current = 0;
+float input_current_sum = 0;
 
 
 void setup() {
@@ -49,7 +47,7 @@ void setup() {
   Serial.println("\nInitializing SD card...");
   if (!SD.begin(chipSelect)) {
     Serial.println("* is a card inserted?");
-    while (true) {} //It will stick here FOREVER if no SD is in on boot
+    //while (true) {} //It will stick here FOREVER if no SD is in on boot
   } else {
     Serial.println("Wiring is correct and a card is present.");
   }
@@ -70,7 +68,7 @@ void setup() {
   //LEDs on pin 7 and 8
   pinMode(7, OUTPUT); //error led
   pinMode(8, OUTPUT); //some digital output
-  pinMode(9, OUTPUT); //relay?
+  pinMode(9, OUTPUT); //relay
 
   //Analogue input, the battery voltage (also port B voltage)
   pinMode(A0, INPUT);
@@ -91,106 +89,81 @@ void setup() {
 
 void loop() {
   if (loop_trigger == 1){ // FAST LOOP (1kHZ) (for changing duty cycle)
-      state_num = next_state; //state transition
 
       // Make the initial sampling operations for the circuit measurements
   
       sensorValue0 = analogRead(A0); //sample Vb (output voltage)
       //sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
-      sensorValue2 = 5.0/(4.096/1023.0); //set Vref, intermediate voltage, roughly equal steps, can be changed
-      sensorValue3 = analogRead(A3); //sample Vpd 
+      sensorValue2 = 3.1/(4.096/1023.0);//set Vref, intermediate voltage, roughly equal steps, can be changed, when set to 3.1
+      //sensorValue2 = 4.8/(5.0/1023.0);
+      sensorValue3 = analogRead(A3); //sample Vpd (input voltage)
       
       // Process the values so they are a bit more usable/readable
       // The analogRead process gives a value between 0 and 1023 
       // representing a voltage between 0 and the analogue reference which is 4.096V
   
       vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts (output voltage)
+      //Serial.println(vb); //1.2?
       //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-      //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-      vref = 5.0; //can we defined vref to be certain constant like that?
+      vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+      Serial.println(vref);
+      //Serial.println(vref);
+      
+      //vref = 5.0; //can we defined vref to be certain constant like that?
       vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
+      //Serial.println(vpd);
 
       // The inductor current is in mA from the sensor so we need to convert to amps.
       // For open loop control the duty cycle reference is calculated from the sensor
       // differently from the Vref, this time scaled between zero and 1.
 
-      pwm_out = sensorValue2 * (1.0 / 1023.0);  
-
-      if (vb < 4.50 || vb > 5.2) { //Checking for Error states (low or high input voltage)
-          state_num = 2; //go directly to jail
-          next_state = 2; // stay in jail
-          digitalWrite(7,true); //turn on the red LED
-          digitalWrite(9, HIGH); //relay off
-          //pwm_out = 0; // no PWM?
-      }
+      pwm_out= sensorValue2 * (1.0 / 1023.0);  
+      //Serial.println(dutyref);
       
       current_measure = ina219.getCurrent_mA(); // sample the inductor current (via the sensor chip)
       iL = current_measure/1000.0; //inductor current in Amperes
       
-      //closed-loop buck
+      //open-loop boost
       //current_limit = 2; // Buck has a higher current limit
-      ev = vref - vb;  //voltage error at this time
-      cv = pidv(ev);  //voltage pid
-      cv = saturation(cv, current_limit, 0); //current demand saturation
-      ei = cv-iL; //current error, not needed average inductor current?
-      pwm_out = pidi(ei);  //current pid
-      pwm_out = saturation(pwm_out,0.99,0.01);  //duty_cycle saturation
-      analogWrite(6, (int)(255 - pwm_out * 255)); // write it out (inverting for the Buck here)
+
+      current_measure = (ina219.getCurrent_mA()); // sample the inductor current (via the sensor chip)
+      iL = current_measure/1000.0; //inductor current in Amperes
+      pwm_out=saturation(pwm_out,0.99,0.01); // saturate the duty cycle
+      Serial.println(pwm_out);
+      //Serial.println(pwm_out);
+      //analogWrite(6, pwm_out); // write it out (Boost here)
+      analogWrite(6, (int)(255 - pwm_out * 255));
+      input_current_sum = input_current + iL; //summing current for averaging
       int_count++; //count how many interrupts since this was last reset to zero
       loop_trigger = 0; //reset the trigger and move on with life
   }
   
   if (int_count == 1000) { // SLOW LOOP (1Hz) (for MPPT and relay operation)
     input_switch = digitalRead(2); //get the OL/CL switch status
-    switch (state_num) { // STATE MACHINE
-      case 0:{ // Start state (no current, no LEDs)
-        pwm_out = 0;
-        if (input_switch == 1 || vb < 4.50 || vb > 5.2) { // if switch and voltages satisfy requirements, move to state 1
-          next_state = 1;
-          digitalWrite(9, LOW); //relay on
-        } else { // otherwise stay put
-          next_state = 0;
-          digitalWrite(9, HIGH); //relay off
-        }
-        break;
-      }
-      case 1:{ // Charging State
-        if (vb < 4.50 || vb > 5.2) { // if below 4.5V or above 5.2V go to state 2
-          next_state = 2;
-          digitalWrite(9, HIGH); //relay off          
-        } else { // otherwise stay in the same state
-          next_state = 1;
-          digitalWrite(9, LOW); //relay on  
-        }
-        if(input_switch == 0){ // UNLESS the switch = 0, then go back to start
-          next_state = 0;
-          digitalWrite(9, HIGH); //relay off  
-        }
-        break;
-      }
-      case 2: { // ERROR (and charge termination) state RED led and no current 
-        pwm_out = 0;
-        next_state = 2; // Always stay here
-        digitalWrite(7,true);
-        digitalWrite(9, HIGH); //relay off
-        if(input_switch == 0){ //UNLESS the switch = 0, then go back to start
-          next_state = 0;
-          digitalWrite(7,false);
-        }
-        break;
-      }
 
-      default :{ // Should not end up here ....
-        Serial.println("Boop");
-        pwm_out = 0;
-        next_state = 2; // So if we are here, we go to error
-        digitalWrite(7,true);
-        digitalWrite(9, HIGH); //relay off
+    if (input_switch == 0) { //turned off
+          digitalWrite(7,true); //turn on the red LED
+          digitalWrite(9, HIGH); //relay off
+          Serial.println(vb);
+          Serial.println("turned off");
+          pwm_out = 0; // no PWM?
       }
-      
-    }
+    else if (vb < 1.2 || vb > 1.45) { //Checking for Error states (low or high input voltage) vb 1.45 approximately correspond to 5.2 V output, 1.51 correspond to 4.80, 1.24 approximately 4.508 V (sunny weather) (cloudy) 4.674V to 1.09
+          digitalWrite(7,true); //turn on the red LED
+          digitalWrite(9, HIGH); //relay off
+          Serial.println("voltage out of range");
+          Serial.println(vb);
+          //Serial.println(vpd);
+          //pwm_out = 0; // no PWM?
+      }
+    else{ //charging
+          digitalWrite(7,false); //turn off the red LED
+          digitalWrite(9, LOW); //relay on
+          Serial.println("charging");
+          Serial.println(vb);
+      }
     
-    dataString = String(state_num) + "," + String(vb) + "," + String(current_measure); //build a datastring for the CSV file
+    dataString = String(vb) + "," + String(current_measure); //build a datastring for the CSV file
     Serial.println(dataString); // send it to serial as well in case a computer is connected
     File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
     if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
@@ -209,59 +182,10 @@ ISR(TCA0_CMP1_vect) {
   TCA0.SINGLE.INTFLAGS |= TCA_SINGLE_CMP1_bm; //clear interrupt flag
 }
 
+
 float saturation( float sat_input, float uplim, float lowlim) { // Saturation function
   if (sat_input > uplim) sat_input = uplim;
   else if (sat_input < lowlim ) sat_input = lowlim;
   else;
   return sat_input;
-}
-
-float pidv( float pid_input){
-  float e_integration;
-  e0v = pid_input;
-  e_integration = e0v;
- 
-  //anti-windup, if last-time pid output reaches the limitation, this time there won't be any intergrations.
-  if(u1v >= uv_max) {
-    e_integration = 0;
-  } else if (u1v <= uv_min) {
-    e_integration = 0;
-  }
-
-  delta_uv = kpv*(e0v-e1v) + kiv*Ts*e_integration + kdv/Ts*(e0v-2*e1v+e2v); //incremental PID programming avoids integrations.there is another PID program called positional PID.
-  u0v = u1v + delta_uv;  //this time's control output
-
-  //output limitation
-  saturation(u0v,uv_max,uv_min);
-  
-  u1v = u0v; //update last time's control output
-  e2v = e1v; //update last last time's error
-  e1v = e0v; // update last time's error
-  return u0v;
-}
-
-// This is a PID controller for the current
-
-float pidi(float pid_input){
-  float e_integration;
-  e0i = pid_input;
-  e_integration=e0i;
-  
-  //anti-windup
-  if(u1i >= ui_max){
-    e_integration = 0;
-  } else if (u1i <= ui_min) {
-    e_integration = 0;
-  }
-  
-  delta_ui = kpi*(e0i-e1i) + kii*Ts*e_integration + kdi/Ts*(e0i-2*e1i+e2i); //incremental PID programming avoids integrations.
-  u0i = u1i + delta_ui;  //this time's control output
-
-  //output limitation
-  saturation(u0i,ui_max,ui_min);
-  
-  u1i = u0i; //update last time's control output
-  e2i = e1i; //update last last time's error
-  e1i = e0i; // update last time's error
-  return u0i;
 }
