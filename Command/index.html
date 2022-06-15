@@ -10,13 +10,64 @@
 
     <body>
         <h1>Mars Rover Command System</h1>
-        <button class = "movement forward">&#129145</button>
-        <button class = "movement backward">&#129147</button>
-        <button class = "movement right">&#129146</button>
-        <button class = "movement left">&#129144</button>
+        <button class = "movement forward" onclick = forward()>&#129145</button>
+        <button class = "movement backward" onclick = backward()>&#129147</button>
+        <button class = "movement right" onclick = right()>&#129146</button>
+        <button class = "movement left" onclick = left()>&#129144</button>
         <div class = "battery">Battery</div>
         <div class = "map">MAP</div>
         <div class = "stars"></div>
+
+        <script>
+            function forward(){
+                const data = 'F'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+
+            function backward(){
+                const data = 'B'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+
+            function right(){
+                const data = 'R'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+
+            function left(){
+                const data = 'L'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+        </script>
+
     </body>
 
 </html>
