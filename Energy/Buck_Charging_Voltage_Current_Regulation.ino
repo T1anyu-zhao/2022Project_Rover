@@ -94,7 +94,7 @@ void loop() {
   
       sensorValue0 = analogRead(A0); //sample Vb (output voltage)
       //sensorValue2 = analogRead(A2); //sample Vref (desired output voltage)
-      sensorValue2 = 3.1/(4.096/1023.0);//set Vref, intermediate voltage, roughly equal steps, can be changed, when set to 3.1
+      sensorValue2 = 4.8/(4.096/1023.0);//set Vref, intermediate voltage, roughly equal steps, can be changed, when set to 3.1, when set to 4.8 works when connected to battery
       //sensorValue2 = 4.8/(5.0/1023.0);
       sensorValue3 = analogRead(A3); //sample Vpd (input voltage)
       
@@ -148,7 +148,7 @@ void loop() {
           Serial.println("turned off");
           pwm_out = 0; // no PWM?
       }
-    else if (vb < 1.2 || vb > 1.45) { //Checking for Error states (low or high input voltage) vb 1.45 approximately correspond to 5.2 V output, 1.51 correspond to 4.80, 1.24 approximately 4.508 V (sunny weather) (cloudy) 4.674V to 1.09
+    else if (vb < 1.33 || vb > 1.60) { //Checking for Error states (low or high input voltage) vb 1.45 approximately correspond to 5.2 V output, 1.51 correspond to 4.80, 1.24 approximately 4.508 V (sunny weather) (cloudy) 4.674V to 1.09, should be 1.2 and 1.45 here, roughly 1.33 and 1.60 when connected to battery
           digitalWrite(7,true); //turn on the red LED
           digitalWrite(9, HIGH); //relay off
           Serial.println("voltage out of range");
@@ -157,7 +157,7 @@ void loop() {
           //pwm_out = 0; // no PWM?
       }
     else{ //charging
-          digitalWrite(7,false); //turn off the red LED
+          digitalWrite(9,false); //turn off the red LED
           digitalWrite(9, LOW); //relay on
           Serial.println("charging");
           Serial.println(vb);
