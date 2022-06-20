@@ -10,6 +10,7 @@
 
     <body>
         <h1>Mars Rover Command System</h1>
+        <!-- movement buttons, css based on styles.css, when clicked they perform the movement functions -->
         <button class = "movement forward" onclick = forward()>&#129145</button>
         <button class = "movement backward" onclick = backward()>&#129147</button>
         <button class = "movement right" onclick = right()>&#129146</button>
@@ -20,6 +21,7 @@
 
         <script>
             function forward(){
+                // when forward button is clicked, the letter F is sent to the server
                 const data = 'F'
                 fetch('http://localhost:8000/datastream', {
                     method: 'POST',
@@ -32,6 +34,7 @@
             }
 
             function backward(){
+                // when backward button is clicked, the letter B is sent to the server
                 const data = 'B'
                 fetch('http://localhost:8000/datastream', {
                     method: 'POST',
@@ -44,6 +47,7 @@
             }
 
             function right(){
+                // when right button is clicked, the letter R is sent to the server
                 const data = 'R'
                 fetch('http://localhost:8000/datastream', {
                     method: 'POST',
@@ -56,6 +60,7 @@
             }
 
             function left(){
+                // when left button is clicked, the letter L is sent to the server
                 const data = 'L'
                 fetch('http://localhost:8000/datastream', {
                     method: 'POST',
