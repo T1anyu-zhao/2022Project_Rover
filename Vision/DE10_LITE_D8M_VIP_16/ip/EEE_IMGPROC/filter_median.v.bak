@@ -1,0 +1,5 @@
+module filter_median (
+input      		    clk, rst, in_valid,
+input 		[7:0]  data_in,
+output reg 	[7:0]  data_out
+)

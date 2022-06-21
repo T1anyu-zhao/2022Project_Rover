@@ -1,0 +1,57 @@
+//use the filter to deal with multi pixels to get rid of the noisees.
+
+module filter_9 (
+    parameter BUFFER_W = 10,
+    parameter DATA_WIDTH = 9,
+    parameter 
+) 
+(
+    input        clk, rst, in_valid,
+    input [15:0] data_in,
+    output[8:0]  data_out
+);
+
+reg [8:0] row_buf [BUFFER_W :0];
+wire [8:0] tmp;
+
+integer i,j;
+
+
+//input data pixel;
+always @(posedge clk) begin
+  if (~rst)
+    row_buf[0] <= 0;
+  else if (in_valid)
+    row_buf[0] <= data_in;
+end
+
+//pass through the buffer row;
+always @(posedge clk) begin 
+    for(i=0; i<BUFFER_W;i=i+1) begin
+        if(~rst)begin
+        row_buf [i+1] <= 0;
+        end
+        else if(in_valid) begin
+        row_buf [i+1] <= row_buf [i];
+        end
+    end
+end
+
+//output the pixels;
+assign tmp = (row_buf[0]<<4'b0001)
+            +(row_buf[1]<<4'b0010)
+            +(row_buf[2]<<4'b0100)
+            +(row_buf[3]<<4'b1000)
+            +(row_buf[4]<<4'b1000)
+            +(row_buf[5]<<4'b0100)
+            +(row_buf[6]<<4'b0010)
+            +(row_buf[7]<<4'b0001)；
+
+always @(posedge clk) begin
+    if(~rst) begin
+        data_out <= 0;
+        end
+    else begin
+        data_out <= tmp >> 5'b11110;
+        end
+end
