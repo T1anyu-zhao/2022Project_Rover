@@ -177,7 +177,7 @@ assign colour_high_without = l_green_det ? l_green_set:
 
 // Show bounding box
 //genvar j;
-wire [23:0] new_image,new_image_without;
+wire [23:0] new_image,new_image_without,image_out;
 wire bb_active_lg,bb_active_dg,bb_active_r,bb_active_p,bb_active_y,bb_active_db;
 
 assign bb_active_lg= (x == left_lg) || (x == right_lg); // | (y == top[j]) | (y == bottom[j]);
@@ -200,6 +200,8 @@ assign new_image_without = bb_active_lg ? l_green_set
                  : bb_active_p  ? pink_set
                  : bb_active_y  ? yellow_set
                  : bb_active_db ? d_blue_set : colour_high_without;
+assign image_out = mode ? new_image : new_image_without;
+
 /*					  
 assign new_image_without = bb_active[0] ? colour_set[0]
                  : bb_active[1] ? colour_set[1]
@@ -216,7 +218,7 @@ assign new_image_without = bb_active[0] ? colour_set[0]
 // Don't modify the start-of-packet word - it's a packet discriptor
 // Don't modify data in non-video packets
 //assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red,green,blue};
-assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : new_image_without;
+assign {red_out, green_out, blue_out} = (~sop & packet_video) ? image_out : {red, green, blue};
 
 //Count valid pixels to tget the image coordinates. Reset and detect packet type on Start of Packet.
 reg [10:0] x, y;
