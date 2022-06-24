@@ -151,7 +151,7 @@ void sampling(){
   // The analogRead process gives a value between 0 and 1023 
   // representing a voltage between 0 and the analogue reference which is 4.096V
   
-  vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts
+  vb = sensorValue1 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts
   //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
   //vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
 
