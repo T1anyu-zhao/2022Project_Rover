@@ -1,0 +1,8 @@
+module dis_measure (
+input [10:0] x_max,x_min,
+output[31:0] distance
+);
+
+//decleration
+//distance / actual width = pixel width / focal distance;
+
