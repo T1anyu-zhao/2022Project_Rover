@@ -65,7 +65,7 @@ void setup() {
   Serial.begin(9600);
   Serial.println("serial");
 
-  digitalWrite(9, LOW); //relay off by default
+  digitalWrite(9, LOW); //relay on by default
   
 }
 
