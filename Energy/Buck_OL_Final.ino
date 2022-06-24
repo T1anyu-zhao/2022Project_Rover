@@ -137,7 +137,7 @@ void setup() {
           Serial.println(vb);
       }
     
-    dataString = String(vb) + "," + String(current_measure); //build a datastring for the CSV file
+    dataString = String(vb) + "," + String(current_mA); //build a datastring for the CSV file
     Serial.println(dataString); // send it to serial as well in case a computer is connected
     File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
     if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
