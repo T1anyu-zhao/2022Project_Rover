@@ -11,7 +11,7 @@
 
 INA219_WE ina219; // this is the instantiation of the library for the current sensor
 
-float vb,vpd,vref,iL,dutyref,current_mA; // Measurement Variables
+float vb,vpd,iL,current_mA; // Measurement Variables
 unsigned int sensorValue0,sensorValue3;  // ADC sample values declaration
 float oc=0; //internal signals
 float pwm_out = 0.85;//initial pwm_out set to 0.85
