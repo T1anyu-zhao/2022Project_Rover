@@ -8,8 +8,13 @@
 #include <Wire.h>
 #include <INA219_WE.h>
 #include <SPI.h>
+#include <SD.h>
 
 INA219_WE ina219; // this is the instantiation of the library for the current sensor
+
+Sd2Card card;
+SdVolume volume;
+SdFile root;
 
 float vb,iL,current_mA; // Measurement Variables
 unsigned int sensorValue1,sensorValue2;  // ADC sample values declaration
