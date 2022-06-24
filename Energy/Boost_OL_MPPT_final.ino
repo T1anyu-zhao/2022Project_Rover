@@ -1,7 +1,7 @@
 /*
  * Modified from Program (used in Power Lab) written by Yue Zhu (yue.zhu18@imperial.ac.) in July 2020.
  * pin6 is PWM output at 62.5kHz.
- * duty-cycle saturation is set as 1% - 99%
+ * duty-cycle saturation is set as 2% - 98%
  * Control frequency is set as 1.25kHz. uk
 */
 
@@ -11,8 +11,8 @@
 
 INA219_WE ina219; // this is the instantiation of the library for the current sensor
 
-float vb,vpd,iL,current_mA; // Measurement Variables
-unsigned int sensorValue0,sensorValue3;  // ADC sample values declaration
+float vb,iL,current_mA; // Measurement Variables
+unsigned int sensorValue1,sensorValue2;  // ADC sample values declaration
 float oc=0; //internal signals
 float pwm_out = 0.85;//initial pwm_out set to 0.85
 float Power_now = 0, Power_anc = 0, voltage_anc = 0;
@@ -136,9 +136,10 @@ void sampling(){
 
   // Make the initial sampling operations for the circuit measurements
   
-  sensorValue0 = analogRead(A0); //sample Vb
+  sensorValue1 = analogRead(A7); //sample Vb, connected via potential divider
+  //sensorValue0 = analogRead(A0); //sample Vb
   //sensorValue2 = analogRead(A2); //sample Vref
-  sensorValue3 = analogRead(A3); //sample Vpd
+  //sensorValue2 = analogRead(A3); //sample Vpd
   current_mA = ina219.getCurrent_mA(); // sample the inductor current (via the sensor chip)
 
   // Process the values so they are a bit more usable/readable
@@ -147,7 +148,7 @@ void sampling(){
   
   vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts
   //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-  vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
+  //vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
 
   // The inductor current is in mA from the sensor so we need to convert to amps.
   // We want to treat it as an input current in the Boost, so its also inverted
