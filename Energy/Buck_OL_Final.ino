@@ -129,7 +129,6 @@ void setup() {
           Serial.println("voltage out of range");
           Serial.println(vb);
           //Serial.println(vpd);
-          //pwm_out = 0; // no PWM?
       }
     else{ //charging
           digitalWrite(7,false); //turn off the red LED
