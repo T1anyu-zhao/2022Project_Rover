@@ -123,7 +123,7 @@ void setup() {
   if (int_count == 1000) { // SLOW LOOP (1Hz) (for MPPT and relay operation)
     Serial.println("!!!!enter slow loop");
 
-    if (vb < 3.7 || vb > 4.2) { //Checking for Error states (low or high battery input voltage) 
+    if (vb < 3.5 || vb > 4.2) { //Checking for Error states (low or high battery input voltage) 
           digitalWrite(7,true); //turn on the red LED
           digitalWrite(9, HIGH); //relay off
           Serial.println("voltage out of range");
