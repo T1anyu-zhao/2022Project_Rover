@@ -22,19 +22,13 @@ con.connect(function(err) {
 }); 
 
 /*
-var radar = "CREATE TABLE radar (x_pos INT, y_pos INT)";
-con.query(radar, function (err, result) {
+var control = "CREATE TABLE control (mode VARCHAR(255))";
+con.query(control, function (err, result) {
     if (err) throw err;
-    console.log("radar table created!");
+    console.log("control table created!");
 });
 */
 
-con.end((err) => {
-    // The connection is terminated gracefully
-    // Ensures all remaining queries are executed
-    // Then sends a quit packet to the MySQL server.
-});  
-    
 // Client's browser performs GET request to ask server to display HTML web page
 server.get('/', function(req, res) {
     res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/index.html');
@@ -47,14 +41,22 @@ server.get('/styles.css', function(req, res) {
 
 // when a user clicks a button on the web app, data is sent to the server using a POST request
 server.post("/datastream", function (req, res) {
-    res.send(req.body.data);
-    //console.log(req.body.data);
+    var click = req.body.data;
+    res.send(click);
+    console.log(click);
+    var control = "UPDATE control SET mode = '"+click+"'";
+    con.query(control, function (err, result) {
+        if (err) throw err;
+        console.log("driving mode updated"); 
+    });
 });
-
-server.get("/datastream", function (req, res) {
-    res.send(req.body.data);
-    console.log(req.body.data);
-});
+/*
+con.end((err) => {
+    // The connection is terminated gracefully
+    // Ensures all remaining queries are executed
+    // Then sends a quit packet to the MySQL server.
+}); 
+*/
 
 // testing 
 //console.log(movement);

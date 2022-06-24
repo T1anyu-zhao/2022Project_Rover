@@ -15,7 +15,7 @@
         <button class = "movement backward" onclick = backward()>&#129147</button>
         <button class = "movement right" onclick = right()>&#129146</button>
         <button class = "movement left" onclick = left()>&#129144</button>
-        <div class = "battery">Battery</div>
+        <div class = "battery" id = "time"></div>
         <div class = "map">MAP</div>
         <div class = "stars"></div>
 
@@ -71,6 +71,19 @@
                 .then(data => console.log(data))
                 .catch(err => console.log(err))
             }
+
+            var mins = 231;
+            document.getElementById("time").innerHTML = mins + " mins remaining";
+            setInterval(time_remaining,60000);
+            function time_remaining(){
+                if(mins <= 0){
+                    clearInterval;
+                    document.getElementById("time").innerHTML = "Battery Empty!";
+                }
+                mins = mins - 1;
+                document.getElementById("time").innerHTML = mins + " mins remaining";
+            }
+
         </script>
 
     </body>
