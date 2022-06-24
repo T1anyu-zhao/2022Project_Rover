@@ -75,19 +75,7 @@ void setup() {
       if (CL_mode) { //Closed Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
       }else{ // Open Loop Boost
-          //current_limit = 2; // 
-          //oc = iL-current_limit; // Calculate the difference between current measurement and current limit
-          //if ( oc > 0) {
-            //open_loop=open_loop+0.001; // We are above the current limit so less duty cycle
-          //} else {
-            //open_loop=open_loop-0.001; // We are below the current limit so more duty cycle
-          //}
-          //open_loop=saturation(open_loop,0.99,dutyref); // saturate the duty cycle at the reference or a min of 0.01
-          //pwm_modulate(open_loop); // and send it out
-
             pwm_out = saturation(pwm_out, 0.99, 0.7); //duty_cycle saturation, maybe use this? 0.8 corresponds to 8V roughly
-            //pwm_out = saturation(pwm_out, 0.99, dutyref); //duty_cycle saturation
-            //pwm_out=saturation(pwm_out,0.99,dutyref); // saturate the duty cycle at the reference or a min of 0.01
             pwm_modulate(pwm_out); // and send it out
             //Serial.println("pwm_out");
             //Serial.println(pwm_out);
