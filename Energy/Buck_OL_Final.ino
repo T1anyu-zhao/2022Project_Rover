@@ -1,7 +1,7 @@
 /*
- * Program written by Yue Zhu (yue.zhu18@imperial.ac.uk) in July 2020.
+ * Modified from Program (used in Power Lab) written by Yue Zhu (yue.zhu18@imperial.ac.uk) in July 2020.
  * pin6 is PWM output at 62.5kHz.
- * duty-cycle saturation is set as 2% - 98%
+ * duty-cycle saturation is set as 1% - 99%
  * Control frequency is set as 1.25kHz. 
 */
 
@@ -16,28 +16,18 @@ Sd2Card card;
 SdVolume volume;
 SdFile root;
 
-float open_loop, closed_loop; // Duty Cycles
 float pwm_out;
-float vpd,vb,vref,iL,dutyref,current_mA,vin; // Measurement Variables
-unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3,sensorValue4;  // ADC sample values declaration
-float ev=0,cv=0,ei=0,oc=0; //internal signals
+float vpd,vb,iL,current_mA,vin; // Measurement Variables
+unsigned int sensorValue0,sensorValue3;  // ADC sample values declaration
 float Ts=0.0008; //1.25 kHz control frequency. It's better to design the control period as integral multiple of switching period.
-float kpv=0.05024,kiv=15.78,kdv=0; // voltage pid.
-float u0v,u1v,delta_uv,e0v,e1v,e2v; // u->output; e->error; 0->this time; 1->last time; 2->last last time
-float kpi=0.02512,kii=39.4,kdi=0; // current pid.
-float u0i,u1i,delta_ui,e0i,e1i,e2i; // Internal values for the current controller
-float uv_max=4, uv_min=0; //anti-windup limitation
-float ui_max=1, ui_min=0; //anti-windup limitation
-float current_limit = 2.0;
-float gain = 0.075;
-float gain_charging = 0.09;
+float gain = 0.055;//0.075
+float gain_charging = 0.065;//0.085
 float offset = 0;
 boolean Boost_mode = 0;
 boolean CL_mode = 0;
 
 unsigned int int_count = 0;
 String dataString;
-float current_measure;
 
 
 unsigned int loopTrigger;
@@ -76,8 +66,6 @@ void setup() {
   Serial.println("serial");
 
   digitalWrite(9, LOW); //relay off by default
-
-  //open_loop = 0.8;
   
 }
 
@@ -93,62 +81,36 @@ void setup() {
     CL_mode = digitalRead(3); // input from the OL_CL switch
     Boost_mode = digitalRead(2); // input from the Buck_Boost switch
 
-    if (!Boost_mode){//somehow !Boost_mode corresponds to Boost mode, maybe not connected to Arduino
+    if (!Boost_mode){//somehow !Boost_mode corresponds to Boost mode
       if (CL_mode) { //Closed Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
-          Serial.println("enter loop");
+          //Serial.println("enter loop");
       }else{ // Open Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
-          Serial.println("enter loop");
+          //Serial.println("enter loop");
       }
     }else{      
-      if (!CL_mode) { // Closed Loop Buck, somehow !CL_mode corresponds to CL mode, maybe not connected to Arduino
-          Serial.println("enter closed loop");
-          // The closed loop path has a voltage controller cascaded with a current controller. The voltage controller
-          // creates a current demand based upon the voltage error. This demand is saturated to give current limiting.
-          // The current loop then gives a duty cycle demand based upon the error between demanded current and measured
-          // current
-          current_limit = 2; // Buck has a higher current limit
-          ev = vref - vb;  //voltage error at this time
-          cv=pidv(ev);  //voltage pid
-          cv=saturation(cv, current_limit, 0); //current demand saturation
-          ei=cv-iL; //current error
-          closed_loop=pidi(ei);  //current pid
-          closed_loop=saturation(closed_loop,0.99,0.01);  //duty_cycle saturation
-          pwm_modulate(closed_loop); //pwm modulation
-          Serial.println(closed_loop);
-          Serial.println(iL);
+      if (!CL_mode) { // Closed Loop Buck, not used
+          //Serial.println("enter closed loop");
+          pwm_modulate(0);
           
       }else{ // Open Loop Buck, using this only
           //Serial.println("enter open loop");
-          //current_limit = (1.6988*vpd - 7.6843);
-          Serial.println(vpd); //2.27 and 2.28 when actually 5V output and input
+          Serial.println(vpd); 
           Serial.println(vb);
           Serial.println(vin);
-          if(current_mA<10){
+          if(current_mA < 10){
               pwm_out = gain*vin + offset;
           }
           else{
               pwm_out = gain_charging*vin + offset;
           }
           pwm_out = saturation(pwm_out,0.99,0.01);
-          //if (current_mA < 10){
-            //pwm_out=saturation(pwm_out,dutyref,0.01); // saturate the duty cycle at the reference or a min of 0.01
-            //}
-          //else{
-            //pwm_out=saturation(pwm_out,0.99,0.01); // saturate the duty cycle at the reference or a min of 0.01
-          //}
           pwm_modulate(pwm_out); // and send it out
-          //Serial.println(dutyref);
-          //Serial.println(open_loop);
           Serial.println("pwm_out");
           Serial.println(pwm_out);
           Serial.println("current_mA");
           Serial.println(current_mA);
-          //Serial.println(current_limit);
-          //Serial.println(oc);
-          //maybe first time open loop saturated at dutyref
-          //second time saturated at 0.99?
       }
     }
     // closed loop control path
@@ -161,7 +123,7 @@ void setup() {
   if (int_count == 1000) { // SLOW LOOP (1Hz) (for MPPT and relay operation)
     Serial.println("!!!!enter slow loop");
 
-    if (vb < 3.5 || vb > 4.2) { //Checking for Error states (low or high input voltage) vb 1.45 approximately correspond to 5.2 V output, 1.51 correspond to 4.80, 1.24 approximately 4.508 V (sunny weather) (cloudy) 4.674V to 1.09, should be 1.2 and 1.45 here, roughly 1.33 and 1.60 when connected to battery
+    if (vb < 3.7 || vb > 4.2) { //Checking for Error states (low or high battery input voltage) 
           digitalWrite(7,true); //turn on the red LED
           digitalWrite(9, HIGH); //relay off
           Serial.println("voltage out of range");
@@ -206,9 +168,7 @@ void sampling(){
   
   sensorValue0 = analogRead(A0); //sample Vb
   //sensorValue2 = analogRead(A2); //sample Vref
-  sensorValue2 = 2.8/(4.096/1023.0); //Vref, set to 2.6 better
-  sensorValue3 = analogRead(A3); //sample Vpd (input voltage?)
-  sensorValue4 = analogRead(A7); //buck input voltage
+  sensorValue3 = analogRead(A3); //sample Vpd (buck input voltage through potential divider)
   current_mA = ina219.getCurrent_mA(); // sample the inductor current (via the sensor chip)
 
   // Process the values so they are a bit more usable/readable
@@ -217,26 +177,11 @@ void sampling(){
   
   vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts
   //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
-  vref = 5.0; //can we defined vref to be certain constant like that?
-  vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts, maybe change the above to 5.0 as well? but maybe connecting to a potential divider, check 
-  vin = 2*sensorValue4 * (4.096 / 1023.0);//maximum 5 V? potential divider to convert maximally 8V to 5V
+  vpd = sensorValue3 * (4.096 / 1023.0); // Convert the buck input voltage sensor reading to volts, connected through a potential divider
+  vin = vpd/0.3708;//converting to actual buck input voltage
 
   // The inductor current is in mA from the sensor so we need to convert to amps.
-  // We want to treat it as an input current in the Boost, so its also inverted
-  // For open loop control the duty cycle reference is calculated from the sensor
-  // differently from the Vref, this time scaled between zero and 1.
-  // The boost duty cycle needs to be saturated with a 0.33 minimum to prevent high output voltages
-  
-  //if (Boost_mode == 1){
-    //iL = -current_mA/1000.0;
-    //dutyref = saturation(sensorValue2 * (1.0 / 1023.0),0.99,0.33);
-  //}
-  //else{
-    iL = current_mA/1000.0;
-    dutyref = sensorValue2 * (1.0 / 1023.0);
-    dutyref = saturation(dutyref,0.99,0.01);
-  //}
-  
+  iL = current_mA/1000.0;
 }
 
 float saturation( float sat_input, float uplim, float lowlim){ // Saturatio function
@@ -248,58 +193,6 @@ float saturation( float sat_input, float uplim, float lowlim){ // Saturatio func
 
 void pwm_modulate(float pwm_input){ // PWM function
   analogWrite(6,(int)(255-pwm_input*255)); 
-}
-
-// This is a PID controller for the voltage
-
-float pidv( float pid_input){
-  float e_integration;
-  e0v = pid_input;
-  e_integration = e0v;
- 
-  //anti-windup, if last-time pid output reaches the limitation, this time there won't be any intergrations.
-  if(u1v >= uv_max) {
-    e_integration = 0;
-  } else if (u1v <= uv_min) {
-    e_integration = 0;
-  }
-
-  delta_uv = kpv*(e0v-e1v) + kiv*Ts*e_integration + kdv/Ts*(e0v-2*e1v+e2v); //incremental PID programming avoids integrations.there is another PID program called positional PID.
-  u0v = u1v + delta_uv;  //this time's control output
-
-  //output limitation
-  saturation(u0v,uv_max,uv_min);
-  
-  u1v = u0v; //update last time's control output
-  e2v = e1v; //update last last time's error
-  e1v = e0v; // update last time's error
-  return u0v;
-}
-
-// This is a PID controller for the current
-
-float pidi(float pid_input){
-  float e_integration;
-  e0i = pid_input;
-  e_integration=e0i;
-  
-  //anti-windup
-  if(u1i >= ui_max){
-    e_integration = 0;
-  } else if (u1i <= ui_min) {
-    e_integration = 0;
-  }
-  
-  delta_ui = kpi*(e0i-e1i) + kii*Ts*e_integration + kdi/Ts*(e0i-2*e1i+e2i); //incremental PID programming avoids integrations.
-  u0i = u1i + delta_ui;  //this time's control output
-
-  //output limitation
-  saturation(u0i,ui_max,ui_min);
-  
-  u1i = u0i; //update last time's control output
-  e2i = e1i; //update last last time's error
-  e1i = e0i; // update last time's error
-  return u0i;
 }
 
 
