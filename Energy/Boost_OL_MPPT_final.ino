@@ -1,5 +1,5 @@
 /*
- * Program written by Yue Zhu (yue.zhu18@imperial.ac.) in July 2020.
+ * Modified from Program (used in Power Lab) written by Yue Zhu (yue.zhu18@imperial.ac.) in July 2020.
  * pin6 is PWM output at 62.5kHz.
  * duty-cycle saturation is set as 2% - 98%
  * Control frequency is set as 1.25kHz. uk
@@ -11,18 +11,13 @@
 
 INA219_WE ina219; // this is the instantiation of the library for the current sensor
 
-float open_loop, closed_loop; // Duty Cycles
-float vpd,vref,iL,dutyref,current_mA; // Measurement Variables
-unsigned int sensorValue0,sensorValue1,sensorValue2,sensorValue3;  // ADC sample values declaration
+float vb,vpd,vref,iL,dutyref,current_mA; // Measurement Variables
+unsigned int sensorValue0,sensorValue3;  // ADC sample values declaration
 float oc=0; //internal signals
-float pwm_out = 0.85;//initial pwm_out set to 0.6
-float vb = 0;
-float input_current = 0;
-float input_current_sum = 0;
+float pwm_out = 0.85;//initial pwm_out set to 0.85
 float Power_now = 0, Power_anc = 0, voltage_anc = 0;
 float delta = 0.02;
 
-float current_limit;
 boolean Boost_mode = 0;
 boolean CL_mode = 0;
 
@@ -75,10 +70,10 @@ void setup() {
       if (CL_mode) { //Closed Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
       }else{ // Open Loop Boost
-            pwm_out = saturation(pwm_out, 0.99, 0.7); //duty_cycle saturation, maybe use this? 0.8 corresponds to 8V roughly
-            pwm_modulate(pwm_out); // and send it out
-            //Serial.println("pwm_out");
-            //Serial.println(pwm_out);
+          pwm_out = saturation(pwm_out, 0.99, 0.7); //duty_cycle saturation, maybe use this? 0.8 corresponds to 8V roughly
+          pwm_modulate(pwm_out); // and send it out
+          //Serial.println("pwm_out");
+          //Serial.println(pwm_out);
       }
     }else{      
       if (CL_mode) { // Closed Loop Buck
@@ -112,8 +107,6 @@ void setup() {
            }
             Power_anc = Power_now;
             voltage_anc = vb;
-            //pwm_out=saturation(pwm_out,0.99,dutyref); // saturate the duty cycle at the reference or a min of 0.01
-            //pwm_modulate(pwm_out); // and send it out
             int_count = 0;
             Serial.println("vb");
             Serial.println(vb);
@@ -144,7 +137,7 @@ void sampling(){
   // Make the initial sampling operations for the circuit measurements
   
   sensorValue0 = analogRead(A0); //sample Vb
-  sensorValue2 = analogRead(A2); //sample Vref
+  //sensorValue2 = analogRead(A2); //sample Vref
   sensorValue3 = analogRead(A3); //sample Vpd
   current_mA = ina219.getCurrent_mA(); // sample the inductor current (via the sensor chip)
 
@@ -153,7 +146,7 @@ void sampling(){
   // representing a voltage between 0 and the analogue reference which is 4.096V
   
   vb = sensorValue0 * (4.096 / 1023.0); // Convert the Vb sensor reading to volts
-  vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
+  //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
   vpd = sensorValue3 * (4.096 / 1023.0); // Convert the Vpd sensor reading to volts
 
   // The inductor current is in mA from the sensor so we need to convert to amps.
@@ -161,16 +154,14 @@ void sampling(){
   // For open loop control the duty cycle reference is calculated from the sensor
   // differently from the Vref, this time scaled between zero and 1.
   // The boost duty cycle needs to be saturated with a 0.33 minimum to prevent high output voltages
+  // duty ref is not used here
   
   if (Boost_mode == 1){
     iL = -current_mA/1000.0;
-    dutyref = saturation(sensorValue2 * (1.0 / 1023.0),0.99,0.33);
+    //dutyref = saturation(sensorValue2 * (1.0 / 1023.0),0.99,0.33);
   }else{
     iL = current_mA/1000.0;
-    dutyref = sensorValue2 * (1.0 / 1023.0);
-    Serial.println("iL");
-    Serial.println(iL);
-    Serial.println(current_mA);
+    //dutyref = sensorValue2 * (1.0 / 1023.0);
   }
   
 }
