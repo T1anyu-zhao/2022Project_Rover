@@ -8,13 +8,13 @@
 #include <Wire.h>
 #include <INA219_WE.h>
 #include <SPI.h>
-#include <SD.h>
+//#include <SD.h>
 
 INA219_WE ina219; // this is the instantiation of the library for the current sensor
 
-Sd2Card card;
-SdVolume volume;
-SdFile root;
+//Sd2Card card;
+//SdVolume volume;
+//SdFile root;
 
 float pwm_out;
 float vpd,vb,iL,current_mA,vin; // Measurement Variables
@@ -137,15 +137,15 @@ void setup() {
           Serial.println(vb);
       }
     
-    dataString = String(vb) + "," + String(current_mA); //build a datastring for the CSV file
-    Serial.println(dataString); // send it to serial as well in case a computer is connected
-    File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
-    if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
-      dataFile.println(dataString); // print the data
-    } else {
-      Serial.println("File not open"); //otherwise print an error
-    }
-    dataFile.close(); // close the file
+    //dataString = String(vb) + "," + String(current_mA); //build a datastring for the CSV file
+    //Serial.println(dataString); // send it to serial as well in case a computer is connected
+    //File dataFile = SD.open("SD_Test.csv", FILE_WRITE); // open our CSV file
+    //if (dataFile){ //If we succeeded (usually this fails if the SD card is out)
+      //dataFile.println(dataString); // print the data
+    //} else {
+      //Serial.println("File not open"); //otherwise print an error
+    //}
+    //dataFile.close(); // close the file
     int_count = 0; // reset the interrupt count so we dont come back here for 1000ms
   }
 }
