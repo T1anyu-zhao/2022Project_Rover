@@ -30,7 +30,7 @@ float uv_max=4, uv_min=0; //anti-windup limitation
 float ui_max=1, ui_min=0; //anti-windup limitation
 float current_limit = 2.0;
 float gain = 0.075;
-float gain_charging = 0.085;
+float gain_charging = 0.09;
 float offset = 0;
 boolean Boost_mode = 0;
 boolean CL_mode = 0;
@@ -93,7 +93,7 @@ void setup() {
     CL_mode = digitalRead(3); // input from the OL_CL switch
     Boost_mode = digitalRead(2); // input from the Buck_Boost switch
 
-    if (!Boost_mode){//somehow !Boost_mode corresponds to Boost mode
+    if (!Boost_mode){//somehow !Boost_mode corresponds to Boost mode, maybe not connected to Arduino
       if (CL_mode) { //Closed Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
           Serial.println("enter loop");
@@ -102,7 +102,7 @@ void setup() {
           Serial.println("enter loop");
       }
     }else{      
-      if (!CL_mode) { // Closed Loop Buck
+      if (!CL_mode) { // Closed Loop Buck, somehow !CL_mode corresponds to CL mode, maybe not connected to Arduino
           Serial.println("enter closed loop");
           // The closed loop path has a voltage controller cascaded with a current controller. The voltage controller
           // creates a current demand based upon the voltage error. This demand is saturated to give current limiting.
@@ -132,23 +132,11 @@ void setup() {
               pwm_out = gain_charging*vin + offset;
           }
           pwm_out = saturation(pwm_out,0.99,0.01);
-          //current_limit = 1000*(1.6988*2.7*vb - 7.6843); // Buck has a higher current limit
-          //oc = current_mA-current_limit;
-          //oc = iL-current_limit; // Calculate the difference between current measurement and current limit
-          //if ( oc > 0) {
-            //open_loop=open_loop-0.001; // We are above the current limit so less duty cycle
-            //open_loop=open_loop-0.01;
-          //} else {
-            //open_loop=open_loop+0.001; // We are below the current limit so more duty cycle
-            //open_loop=open_loop+0.01;
-          //}
-          //open_loop=saturation(open_loop,dutyref,0.02);
-          //open_loop=saturation(open_loop,0.71,0.02);
           //if (current_mA < 10){
-            //open_loop=saturation(open_loop,dutyref,0.01); // saturate the duty cycle at the reference or a min of 0.01
+            //pwm_out=saturation(pwm_out,dutyref,0.01); // saturate the duty cycle at the reference or a min of 0.01
             //}
           //else{
-            //open_loop=saturation(open_loop,0.99,0.01); // saturate the duty cycle at the reference or a min of 0.01
+            //pwm_out=saturation(pwm_out,0.99,0.01); // saturate the duty cycle at the reference or a min of 0.01
           //}
           pwm_modulate(pwm_out); // and send it out
           //Serial.println(dutyref);
@@ -246,7 +234,7 @@ void sampling(){
   //else{
     iL = current_mA/1000.0;
     dutyref = sensorValue2 * (1.0 / 1023.0);
-    dutyref = saturation(dutyref,0.99,0.02);
+    dutyref = saturation(dutyref,0.99,0.01);
   //}
   
 }
