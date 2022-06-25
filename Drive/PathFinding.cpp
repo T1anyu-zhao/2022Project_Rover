@@ -144,7 +144,7 @@ int follow = 1;
 typedef list<float> Coordinate_list;
 Coordinate_list coordinate_list;
 Coordinate_list::iterator it;
-float x1,x2,y1,y2;
+float x1, x2, y_1, y2;
 float del_x;
 float OH, base;
 float final_destination_x, final_destination_y;
@@ -631,82 +631,7 @@ bool check_block(int binary_output, float& angle_o, float& d_o_v){
 
     }
   }
-}
-
-void set_destination(){//执行设置目的地以及要求行动
-
-  for(int count_pair; coordinate_list.size()/2>0; ){
-    it = coordinate_list.begin();
-    destination_x = *it;
-    advance(it,follow);
-    destination_y = *it;
-
-    it = coordinate_list.end();
-    final_destination_y = *--it;
-    final_destination_x = *--it;
-  }
-  //mode = 'C';
-}
-
-void edit_list(){
-
-  if(check_done){
-    it = coordinate_list.begin();
-    coordinate_list.erase(it);
-    advance(it,follow);
-    coordinate_list.erase(it);
-    check_done = false;
-
-    //for debug
-    std::cout<<"coordinate_list.begin()----coordinate_list.end():" << endl;
-    for (it; it != coordinate_list.end(); ++it){
-      std::cout << *it << " ";
-    }
-    std::cout << endl;
-
-    return;
-  
-  }
-
-  float d2destination = sqrt(pow(destination_x-current_x,2) + pow(destination_y-current_y,2));
-
-  if(generate_coordinates){
-
-    if(current_angle*(destination_x-final_destination_x)<0){
-      coordinate_list.push_front(y1);
-      coordinate_list.push_front(x1);
-      //add only one coordinate
-      
-      it = coordinate_list.end();
-      coordinate_list.erase(it);
-      coordinate_list.erase(it);
-      //last coordinate deleted!
-      //then the rover get back to the normal path gradually
-      if(coordinate_list.empty()){
-        reachDestination = true;
-      }
-      return;
-
-    }
-
-    if((go_straight_1 || go_straight_3) && del_x < 30){
-      coordinate_list.push_front(y1);
-      coordinate_list.push_front(x1);
-    }
-
-    if(2*OH > d2destination){
-      it = coordinate_list.begin();
-      coordinate_list.erase(it);
-      advance(it,follow);
-      coordinate_list.erase(it);
-    }
-
-    coordinate_list.push_front(y2);
-    coordinate_list.push_front(x2);
-    coordinate_list.push_front(y1);
-    coordinate_list.push_front(x1);
-  }
-  return;
+  return false;
 }
 
 bool generate_coordinates(){
@@ -741,12 +666,12 @@ bool generate_coordinates(){
     
     //add one intermediate point
     float x1 = current_x + magnitude * sin(desire_angle);
-    float y1 = current_y + magnitude * cos(desire_angle);
+    float y_1 = current_y + magnitude * cos(desire_angle);
 
     
     //add second point to finish divesion
-    float x2 = current_x + base * sin(current_angle);
-    float y2 = current_y + base * cos(current_angle);
+    //float x2 = current_x + base * sin(current_angle);
+    //float y2 = current_y + base * cos(current_angle);
 
     return true;
     
@@ -755,6 +680,84 @@ bool generate_coordinates(){
   
   return false;
 }
+
+void set_destination(){//执行设置目的地以及要求行动
+
+  for(int count_pair; coordinate_list.size()/2>0; ){
+    it = coordinate_list.begin();
+    destination_x = *it;
+    advance(it,follow);
+    destination_y = *it;
+
+    it = coordinate_list.end();
+    final_destination_y = *--it;
+    final_destination_x = *--it;
+  }
+  //mode = 'C';
+}
+
+void edit_list(){
+
+  if(check_done){
+    it = coordinate_list.begin();
+    coordinate_list.erase(it);
+    advance(it,1);
+    coordinate_list.erase(it);
+    check_done = false;
+
+    //for debug
+    std::cout<<"coordinate_list.begin()----coordinate_list.end():" << endl;
+    for (it; it != coordinate_list.end(); ++it){
+      std::cout << *it << " ";
+    }
+    std::cout << endl;
+
+    return;
+  
+  }
+
+  float d2destination = sqrt(pow(destination_x-current_x,2) + pow(destination_y-current_y,2));
+
+  if(generate_coordinates){
+
+    if(current_angle*(destination_x-final_destination_x)<0){
+      coordinate_list.push_front(y_1);
+      coordinate_list.push_front(x1);
+      //add only one coordinate
+      
+      it = coordinate_list.end();
+      coordinate_list.erase(it);
+      coordinate_list.erase(it);
+      //last coordinate deleted!
+      //then the rover get back to the normal path gradually
+      if(coordinate_list.empty()){
+        reachDestination = true;
+      }
+      return;
+
+    }
+
+    if((go_straight_1 || go_straight_3) && del_x < 30){
+      coordinate_list.push_front(y_1);
+      coordinate_list.push_front(x1);
+    }
+
+    if(2*OH > d2destination){
+      it = coordinate_list.begin();
+      coordinate_list.erase(it);
+      advance(it,follow);
+      coordinate_list.erase(it);
+    }
+
+    coordinate_list.push_front(y2);
+    coordinate_list.push_front(x2);
+    coordinate_list.push_front(y_1);
+    coordinate_list.push_front(x1);
+  }
+  return;
+}
+
+
 
 
 ///////Set up///////
@@ -807,29 +810,66 @@ void loop()
   ---->let the iterator points to the first coordinate in the front of the list
 
   */
-  if(set_line_end){
+
+#if 0
+/*
+    if(movementflag){
+
+    tdistance = tdistance + convTwosComp(xydat[0]);
+    Serial.println("Distance = " + String(tdistance));
+    movementflag=0;
+    delay(3);
+    }
+
+  */
+  // if enabled this section grabs frames and outputs them as ascii art
+
+  if(mousecam_frame_capture(frame)==0)
+  {
+    int i,j,k;
+    for(i=0, k=0; i<ADNS3080_PIXELS_Y; i++)
+    {
+      for(j=0; j<ADNS3080_PIXELS_X; j++, k++)
+      {
+        Serial.print(asciiart(frame[k]));
+        Serial.print(' ');
+      }
+      Serial.println();
+    }
+  }
+  Serial.println();
+  delay(250);
+
+#else
+    //mode_C;
+    if(set_line_end){
 
     if(!go_straight_1 && go_straight_4){
 
-        //cout << "go_straight_1------------------" << endl;
+        cout << "go_straight_1------------------" << endl;
         //cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
 
         if(g == 1){
           cout << "g = " << g << endl;
           destination_x = increment;
           destination_y = length_c - length_r - 500;
+ 
           cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
 
           coordinate_list.push_front(destination_x);
-          coordinate_list.push_back(destination_x);
+          coordinate_list.push_back(destination_y);
 
-          //it = coordinate_list.begin();
-          //destination_x = *it;
-          //advance(it,follow);
-          //destination_y = *it;
+          it = coordinate_list.begin();
+          destination_x = *it;
+          advance(it,follow);
+          destination_y = *it;
 
-          cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-          g++;
+          cout << "using iterator destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
+          //g++;
+            go_straight_1 = true;
+            reachDestination = false;
+            coordinate_list.clear();
+          
         }
     
 
@@ -846,12 +886,26 @@ void loop()
 
     else if(go_straight_1 && !go_straight_2){
 
-        cout << "go_straight_1------------------" << endl;
+        cout << "go_straight_2------------------" << endl;
             
         if(h == i){
           increment = increment + 300;
           destination_x = increment;
           destination_y = length_c-500-length_r;
+
+          coordinate_list.push_front(destination_x);
+          coordinate_list.push_back(destination_y);
+
+          it = coordinate_list.begin();
+          destination_x = *it;
+          advance(it,follow);
+          destination_y = *it;
+
+          cout << "using iterator destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
+          //g++;
+            go_straight_1 = true;
+            reachDestination = false;
+            coordinate_list.clear();
         }
 
 
@@ -920,51 +974,20 @@ void loop()
               i++; 
             } 
             g++;
-            return;
+            //return;
             }
       }
   }
   
-  check_detect(op_from_v);
-  check_block(op_from_v, angle_o, d_o_v);
-  bool generate_done = generate_coordinates;
-  if(generate_done){
-    edit_list;
-  }
-  set_destination;
+  //check_detect(op_from_v);
+  //check_block(op_from_v, angle_o, d_o_v);
+  //bool generate_done = generate_coordinates;
+  //if(generate_done){
+   // edit_list;
+  //}
+  //set_destination;
   //at the end of loop, the destination has been determined.
-
-#if 0
-/*
-    if(movementflag){
-
-    tdistance = tdistance + convTwosComp(xydat[0]);
-    Serial.println("Distance = " + String(tdistance));
-    movementflag=0;
-    delay(3);
-    }
-
-  */
-  // if enabled this section grabs frames and outputs them as ascii art
-
-  if(mousecam_frame_capture(frame)==0)
-  {
-    int i,j,k;
-    for(i=0, k=0; i<ADNS3080_PIXELS_Y; i++)
-    {
-      for(j=0; j<ADNS3080_PIXELS_X; j++, k++)
-      {
-        Serial.print(asciiart(frame[k]));
-        Serial.print(' ');
-      }
-      Serial.println();
-    }
-  }
-  Serial.println();
-  delay(250);
-
-#else
-    //mode_C;
+  cout << " we set destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl; 
     
     Serial.println("Another loop");
     // if enabled this section produces a bar graph of the surface quality that can be used to focus the camera
