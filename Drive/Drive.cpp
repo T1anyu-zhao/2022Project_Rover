@@ -91,8 +91,8 @@ Robojax_L298N_DC_motor robot(IN1, IN2, ENA, CHA, IN3, IN4, ENB, CHB);
 boolean reachDestination = false;
 float destination_x;
 float destination_y;
-float dest_x=0;
-float dest_y=50;
+float dest_x=50;
+float dest_y= 50;
 
 // Values for PID
 float kp = 0.35;
@@ -358,7 +358,7 @@ bool distance_control(int desired_x, int desired_y)
   int speed=0;
   // Determine speed and direction based on the value of the control signal
   // direction
-  if (error_distance > 30 && !forward) // move backward
+  if (error_distance > 10 && !forward) // move backward
   {
     Serial.println("Move backward");
     constant = -1; // move backwards, when calculate current position should minus the distance it traveld
@@ -393,7 +393,7 @@ bool distance_control(int desired_x, int desired_y)
       robot.rotate(motor2, 18, CW);
     }
   }
-  else if (error_distance > 30 && forward) // move forward
+  else if (error_distance > 10 && forward) // move forward
   {
     Serial.println("Move forward");
     constant = 1; // move backwards, when calculate current position should minus the distance it traveld
@@ -908,13 +908,13 @@ void loop()
   }
 */
 
-bool reach=false;
-    reach = mode_c( dest_x, dest_y);
+//bool reach=false;
+    mode_c( dest_x, dest_y);
     Serial.print('\n');
     Serial.println("Final Current_x: " + String(current_x));
     Serial.println("Final Current_y: " + String(current_y));
     Serial.println("Final Current angle: " + String(convertTodegree(current_angle)));
-    Serial.println("Rech destination: " + String(reach));
+    //Serial.println("Rech destination: " + String(reach));
     Serial.println("END");
     Serial.print('\n');
 
