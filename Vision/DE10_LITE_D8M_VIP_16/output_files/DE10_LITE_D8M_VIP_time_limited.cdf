@@ -3,8 +3,6 @@ JedecChain;
 	FileRevision(JESD32A);
 	DefaultMfr(6E);
 
-	P ActionCode(Cfg)
-		Device PartName(10M50DAF484) Path("D:/AllProjects/2022Mars_Rover/EEE2Rover/DE10_LITE_D8M_VIP_16/output_files/") File("DE10_LITE_D8M_VIP_time_limited.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

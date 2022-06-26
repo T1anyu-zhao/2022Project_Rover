@@ -103,8 +103,8 @@ rgb2hsv h1 (
 
 //setting the colour;
 parameter COLOUR_N = 6;
-wire [23:0] colour_high,colour_high_without;
-wire [23:0] l_green_set, d_green_set, red_set, pink_set, yellow_set, d_blue_set;
+wire [23:0] colour_high,colour_high_without,block_top_high;
+wire [23:0] l_green_set, d_green_set, red_set, pink_set, yellow_set, d_blue_set,edge_colour;
 wire l_green_det, d_green_det, red_det, pink_det, yellow_det, d_blue_det;
 wire l_green_high, d_green_high, red_high, pink_high, yellow_high, d_blue_high;
 
@@ -118,13 +118,14 @@ assign red_set    ={8'hff,8'h00,8'h00};//red
 assign pink_set	  ={8'hfc,8'h6d,8'ha3};//pink
 assign yellow_set ={8'hf9,8'hf9,8'h00};//yellow
 assign d_blue_set  ={8'h00,8'h4b,8'h97};//dark blue
+assign edge_colour = 24'hffffff;//white
 //set the detection range same order as setting;
-assign l_green_det = ( (100<=hue)&&(hue<=130) && (86<=sat)&&(sat<=200) && (158<=val)&&(val<=255));
-assign d_green_det = 0;//( (100<hue)&&(hue<160) && (80<sat)&&(sat<256) && (50<val) && (val<150));4585
-assign red_det = ( (0<=hue)&&(hue<=32) && (195<=sat)&&(sat<=235) && (50<=val) && (val<=255));//0
-assign pink_det = 0;//( (<hue)&&(hue<) && (<sat)&&(sat<) && (<val) && (val<));
-assign yellow_det = ( (50<=hue)&&(hue<=70) && (80<=sat)&&(sat<=240) && (80<=val) && (val<=256));
-assign d_blue_det = ( (200<=hue)&&(hue<=250) && (80<=sat)&&(sat<=227) && (80<=val) && (val<=255));
+assign l_green_det = ( (100<=hue)&&(hue<=130) && (86<=sat) &&(sat<=200) && (158<=val) && (val<=255));
+assign d_green_det = ( (100<=hue)&&(hue<=160) && (50<=sat) &&(sat<=256) && (50<=val)  && (val<=150));//val120- 100 163
+assign red_det 	 = ( (11<=hue)  &&(hue<=22)  && (140<=sat) &&(sat<=240) && (100<=val) && (val<=200));//sat200+val195-
+assign pink_det 	 = ( (0<=hue)&&(hue<=12) && (100<=sat)&&(sat<=184) && (200<=val) && (val<=255));
+assign yellow_det  = ( (45<=hue) &&(hue<=70)  && (110<=sat)&&(sat<=255) && (150<=val) && (val<=255));//sat180+val220+
+assign d_blue_det  = ( (160<=hue)&&(hue<=270) && (46<=sat) &&(sat<=256) && (46<=val)  && (val<=255));//170-236 val120_
 
 /*
 ( (104<=hue)&&(hue<=168) && (88<=sat)&&(sat<=255) && (0<=val) && (val<=140));
@@ -154,6 +155,21 @@ assign pink_high    = detect_filt[2];
 assign yellow_high  = detect_filt[1];
 assign d_blue_high  = detect_filt[0];
 
+//building detection//
+wire building_edge;
+wire [23:0] threshold_setting;
+assign threshold_setting = 24'h0000ff;
+sobel build_detect(
+	.clk(clk), 
+	.rst(reset_n), 
+	.in_valid(in_valid),
+	.red_in(red),
+	.green_in(green),
+	.blue_in(blue),
+	.sobelthreshold(threshold_setting),
+	.data_out(building_edge)
+);
+
 assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
 //assign colour_high =  (fir_detect[0] && sec_detect[0]) ? colour_set[0] :
 //					  (fir_detect[1] && sec_detect[1]) ? colour_set[1] :
@@ -166,7 +182,8 @@ assign colour_high = l_green_high ? l_green_set:
 					 red_high	  ? red_set    :
 					 pink_high    ? pink_set   :
 					 yellow_high  ? yellow_set :
-					 d_blue_high  ? d_blue_set : {grey,grey,grey};
+					 d_blue_high  ? d_blue_set : 
+					 building_edge ? edge_colour : {grey,grey,grey};
 
 assign colour_high_without = l_green_det ? l_green_set:
 					 d_green_det ? d_green_set:
@@ -174,6 +191,9 @@ assign colour_high_without = l_green_det ? l_green_set:
 					 pink_det    ? pink_set   :
 					 yellow_det  ? yellow_set :
 					 d_blue_det  ? d_blue_set : {grey,grey,grey};
+					 
+assign block_top_high = ( y > 200 ) ? colour_high : {grey,grey,grey};
+
 
 // Show bounding box
 //genvar j;
@@ -192,23 +212,14 @@ assign new_image = bb_active_lg ? l_green_set
                  : bb_active_r  ? red_set
                  : bb_active_p  ? pink_set
                  : bb_active_y  ? yellow_set
-                 : bb_active_db ? d_blue_set : colour_high;
-					  
+                 : bb_active_db ? d_blue_set : block_top_high;
+/*					  
 assign new_image_without = bb_active_lg ? l_green_set
                  : bb_active_dg ? d_green_set
                  : bb_active_r  ? red_set
                  : bb_active_p  ? pink_set
                  : bb_active_y  ? yellow_set
                  : bb_active_db ? d_blue_set : colour_high_without;
-assign image_out = mode ? new_image : new_image_without;
-
-/*					  
-assign new_image_without = bb_active[0] ? colour_set[0]
-                 : bb_active[1] ? colour_set[1]
-                 : bb_active[2] ? colour_set[2]
-                 : bb_active[3] ? colour_set[3]
-                 : bb_active[4] ? colour_set[4]
-                 : bb_active[5] ? colour_set[5] : colour_high_without;
 */
 
 //assign bb_active = (x == left) | (x == right);//| (y == top) | (y == bottom); 
@@ -217,8 +228,9 @@ assign new_image_without = bb_active[0] ? colour_set[0]
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet discriptor
 // Don't modify data in non-video packets
-//assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red,green,blue};
-assign {red_out, green_out, blue_out} = (~sop & packet_video) ? image_out : {red, green, blue};
+assign {red_out, green_out, blue_out} = (mode & ~sop & packet_video) ? new_image : {red,green,blue};
+//assign image_out = mode ? new_image : new_image_without;
+//assign {red_out, green_out, blue_out} = (~sop & packet_video) ? image_out : {red, green, blue};
 
 //Count valid pixels to tget the image coordinates. Reset and detect packet type on Start of Packet.
 reg [10:0] x, y;
@@ -305,13 +317,13 @@ always@(posedge clk) begin
 		
 		//Latch edges for display overlay on next frame
 		left_lg <= x_min_lg;
-		left_dg <= x_min_lg;
+		left_dg <= x_min_dg;
 		left_r  <= x_min_r;
 		left_p  <= x_min_p;
 		left_y  <= x_min_y;
 		left_db <= x_min_db;
 		right_lg <= x_max_lg;
-		right_dg <= x_max_lg;
+		right_dg <= x_max_dg;
 		right_r  <= x_max_r;
 		right_p  <= x_max_p;
 		right_y  <= x_max_y;

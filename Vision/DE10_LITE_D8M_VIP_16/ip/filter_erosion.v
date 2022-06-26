@@ -40,7 +40,7 @@ assign tmp1 = (count1 >= 8'd6) ? {1'b1} :{1'b0};
 assign tmp2 = (count2 >= 8'd6) ? {1'b1} :{1'b0};
 assign tmp3 = (count3 >= 8'd6) ? {1'b1} :{1'b0};
 assign tmp4 = (count4 >= 8'd6) ? {1'b1} :{1'b0};
-assign tmp5 = (count5 >= 8'd6) ? {1'b1} :{1'b0};
+assign tmp5 = (count5 >= 8'd8) ? {1'b1} :{1'b0};
 assign tmp6 = (count6 >= 8'd6) ? {1'b1} :{1'b0};
 
 assign data_out = {2'b0,tmp1,tmp2,tmp3,tmp4,tmp5,tmp6};
