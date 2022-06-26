@@ -5,6 +5,7 @@ server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
 var mysql = require('mysql');
 var http = require('http');
+var net = require('net');
 
 const con = mysql.createConnection({
     host: 'localhost',
@@ -39,17 +40,41 @@ server.get('/styles.css', function(req, res) {
     res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/styles.css');
 });
 
+// index.html requires rover.png so you have to add a GET request in node.js
+server.get('/rover.png', function(req, res) {
+    res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/rover.png');
+});
+
 // when a user clicks a button on the web app, data is sent to the server using a POST request
+
 server.post("/datastream", function (req, res) {
     var click = req.body.data;
     res.send(click);
     console.log(click);
+});
+
+console.log('Server is running on port 8000');
+server.listen(8000,'0.0.0.0');
+
+    /*
+    var client = new net.Socket();
+    // ip address and port number of server running on esp32
+    client.connect(80, '192.168.137.99', function() {
+        console.log('Connected');
+        client.write(click);
+    });
+    */
+    /*
+    server.get("/datastream", function (req, res) {
+        res.send(click);
+    });
     var control = "UPDATE control SET mode = '"+click+"'";
     con.query(control, function (err, result) {
         if (err) throw err;
         console.log("driving mode updated"); 
     });
-});
+    */
+
 /*
 con.end((err) => {
     // The connection is terminated gracefully
@@ -68,6 +93,3 @@ server.get("/datastream", function (req, res) {
     res.end('Hello');
 });
 */
-
-console.log('Server is running on port 8000');
-server.listen(8000,'0.0.0.0');

@@ -15,9 +15,17 @@
         <button class = "movement backward" onclick = backward()>&#129147</button>
         <button class = "movement right" onclick = right()>&#129146</button>
         <button class = "movement left" onclick = left()>&#129144</button>
+        <button class = "movement stop" onclick = stop()>STOP</button>
         <div class = "battery" id = "time"></div>
         <div class = "map">MAP</div>
         <div class = "stars"></div>
+        <div class = "aliens blue"></div>
+        <div class = "aliens fuchsia"></div>
+        <div class = "aliens green"></div>
+        <div class = "aliens red"></div>
+        <div class = "aliens teal"></div>
+        <div class = "aliens yellow"></div>
+        <img src="rover.png" alt="rover" style="width:8%;height:8%;position:absolute;left:5%;top:80%;z-index: 2;">
 
         <script>
             function forward(){
@@ -62,6 +70,19 @@
             function left(){
                 // when left button is clicked, the letter L is sent to the server
                 const data = 'L'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+
+            function stop(){
+                // when stop button is clicked, the letter S is sent to the server
+                const data = 'S'
                 fetch('http://localhost:8000/datastream', {
                     method: 'POST',
                     body: JSON.stringify({ data }),

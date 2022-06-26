@@ -12,6 +12,7 @@ body {
     width: 1px;
     background-color: white;
     border-radius: 100%;
+    z-index: 1;
     box-shadow: -36vw -40vh 3px 0px white,49vw 4vh 1px 2px white,-49vw -25vh 1px 0px white,
     21vw 18vh 1px 1px white,-16vw -6vh 3px 2px white,23vw -33vh 3px 2px white,
     24vw -5vh 2px 0px white,26vw -10vh 0px 2px white,1vw -34vh 3px 0px white,
@@ -52,6 +53,7 @@ h1 {
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     text-align: center;
     font-size: 250%;
+    z-index: 2;
 }
 
 .movement {
@@ -68,6 +70,7 @@ h1 {
     border-radius: 10%;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     transition-duration: 0.4s;
+    z-index: 2;
 }
 
 .forward {
@@ -110,6 +113,16 @@ h1 {
     color: black;
 }
 
+.stop {
+    position: absolute; right: 20%; top: 50%;
+}
+
+.stop:hover {
+    background-color: red;
+    border: none;
+    color: white;
+}
+
 .battery {
     background-color: darkgreen;
     border: 4px solid darkgoldenrod;
@@ -122,6 +135,7 @@ h1 {
     margin: auto;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     position: absolute; left: 15%; top: 3.5%;
+    z-index: 2;
 }
 
 .map {
@@ -137,4 +151,44 @@ h1 {
     margin: auto;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     position: absolute; left: 5%; top: 20%;
+    z-index: 2;
+}
+
+.aliens {
+    height: 30px;
+    width: 30px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 3px solid white;
+    z-index: 2;
+}
+
+.blue {
+    background-color: blue;
+    position: absolute; left: 10%; top: 30%;
+}
+
+.fuchsia {
+    background-color: fuchsia;
+    position: absolute; left: 20%; top: 50%;
+}
+
+.green {
+    background-color: green;
+    position: absolute; left: 50%; top: 42%;
+}
+
+.red {
+    background-color: red;
+    position: absolute; left: 15%; top: 70%;
+}
+
+.teal {
+    background-color: teal;
+    position: absolute; left: 35%; top: 60%;
+}
+
+.yellow {
+    background-color: yellow;
+    position: absolute; left: 44%; top: 78%;
 }
