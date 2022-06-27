@@ -118,6 +118,8 @@ int r = 130;
 const float pi = 3.14159265359;
 float error_angle = 0;
 int angle_90 = 90;
+bool turn;
+
 
 int increment = 300;
 // float destination_x, destination_y;
@@ -543,7 +545,7 @@ bool rotate_constant(float desired_angle, float dy, float dx, float *current_an)
   error_angle = desired_angle - convertTodegree(current_angle);
   Serial.println("Error angle: " + String(error_angle));
   Serial.println("Desire angle in angle control: " + String(desired_angle));
-  int speed = 15;
+  int speed = 25;
   // Determine speed and direction based on the value of the control signal
   // direction
   if (error_angle >= 5) // turn right
@@ -562,8 +564,8 @@ bool rotate_constant(float desired_angle, float dy, float dx, float *current_an)
   }
   else // stop/break
   {
-    // robot.brake(1);
-    // robot.brake(2);
+     robot.brake(1);
+     robot.brake(2);
     return true; // angle_control done
     Serial.println("Angle_rotate done");
   }
@@ -571,8 +573,8 @@ bool rotate_constant(float desired_angle, float dy, float dx, float *current_an)
   float moved_angle = asin(moved_distance / (2 * r)) * 2;
   float angle = *current_an;
   angle = angle + constant * moved_angle;
-  angle = (angle > 3.14159265359) ? (angle - 3.14159265359) : angle;
-  angle = (angle < -3.14159265359) ? (angle + 3.14159265359) : angle;
+  //angle = (angle >= 2*3.14159265359) ? (angle - 2*3.14159265359) : angle;
+  //angle = (angle < -3.14159265359) ? (angle + 3.14159265359) : angle;
   *current_an = angle;
   Serial.println("Current angle: " + String(convertTodegree(angle))); // easier to read when convert to degree
   return false;
@@ -582,10 +584,11 @@ void rotate360()
 {
   bool turn;
   bool turn360 = (convertTodegree(current_angle) != 360 + 5) && (convertTodegree(current_angle) != 360 - 5) ? false : true;
-  if (!turn360)
+
+  if (angle_90<=360)
   {
 
-    while (!turn)
+    while(!turn &&convertTodegree(current_angle)<360 )
     {
       Serial.println("Desire angle = " + String(angle_90));
       int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
@@ -928,6 +931,7 @@ void loop()
   }
   if (mode == 'C')
   {
+    delay(1000);
     // bool reach=false;
     // mode_c( dest_x, dest_y);
     rotate360();
