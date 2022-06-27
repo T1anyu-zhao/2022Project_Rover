@@ -209,34 +209,44 @@ h1 {
     display: inline-block;
     border: 3px solid white;
     z-index: 2;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    text-align: center;
+    margin: auto;
+    font-size: x-large;
 }
 
 .blue {
     background-color: blue;
-    position: absolute; left: 10%; top: 30%;
+    position: absolute; left: 5%; top: 15%;
+    color: white;
 }
 
 .fuchsia {
     background-color: fuchsia;
-    position: absolute; left: 20%; top: 50%;
+    position: absolute; left: 30%; top: 35%;
+    color: black;
 }
 
 .green {
     background-color: green;
-    position: absolute; left: 50%; top: 42%;
+    position: absolute; left: 90%; top: 5%;
+    color: white;
 }
 
 .red {
     background-color: red;
     position: absolute; left: 15%; top: 70%;
+    color: white;
 }
 
 .teal {
     background-color: teal;
-    position: absolute; left: 35%; top: 60%;
+    position: absolute; left: 65%; top: 55%;
+    color: black;
 }
 
 .yellow {
     background-color: yellow;
     position: absolute; left: 44%; top: 78%;
+    color: black;
 }
