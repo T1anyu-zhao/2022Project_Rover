@@ -22,14 +22,6 @@ con.connect(function(err) {
     console.log("Connected to Database!");
 }); 
 
-/*
-var control = "CREATE TABLE control (mode VARCHAR(255))";
-con.query(control, function (err, result) {
-    if (err) throw err;
-    console.log("control table created!");
-});
-*/
-
 // Client's browser performs GET request to ask server to display HTML web page
 server.get('/', function(req, res) {
     res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/index.html');
@@ -44,6 +36,7 @@ server.get('/styles.css', function(req, res) {
 server.get('/rover.png', function(req, res) {
     res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/rover.png');
 });
+
 
 // when a user clicks a button on the web app, data is sent to the server using a POST request
 
@@ -91,5 +84,16 @@ server.get("/datastream", function (req, res) {
     res.send(req.body.data);
     console.log('esp32 get request');
     res.end('Hello');
+});
+*/
+
+/*
+var b_x_pos;
+
+var aliens = "SELECT x_pos FROM aliens WHERE colour = 'B'";
+con.query(aliens, function (err, result) {
+    if (err) throw err;
+    b_x_pos = result;
+    //console.log(b_x_pos);
 });
 */
