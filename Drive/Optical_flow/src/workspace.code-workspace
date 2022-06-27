@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "test",
+			"path": "..\\..\\test"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"test": "c",
+			"test2": "c",
+			"cmath": "cpp",
+			"iostream": "cpp",
+			"test3": "c"
+		}
+	}
+}
