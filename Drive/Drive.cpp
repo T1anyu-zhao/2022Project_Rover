@@ -350,11 +350,11 @@ float calculatePID(float error)
   return controlSignal;
 }
 
-bool distance_control(int desired_x, int desired_y)
+bool distance_control(int desired_x, int desired_y,int desire_a)
 {
   float error_distance = sqrt(pow((current_x - desired_x), 2) + pow((current_y - desired_y), 2));
   float control_distance = calculatePID(error_distance);
-  bool forward = (((current_y + error_distance * cos(current_angle) < desired_y + 5) && (current_y + error_distance * cos(current_angle) > desired_y - 5))) ? true : false;
+  bool forward = (((current_y + error_distance * cos(desire_a) < desired_y + 5) && (current_y + error_distance * cos(desire_a) > desired_y - 5))) ? true : false;
   int speed=0;
   // Determine speed and direction based on the value of the control signal
   // direction
@@ -592,7 +592,6 @@ void mode_c ( float destination_x, float destination_y)
       }
       else{
     reachDestination = (destination_x != current_x || destination_y != current_y) ? false : true;
-   float desire_angle;
     bool turn_done;
     bool check_block=false;
     //rotate
@@ -648,7 +647,7 @@ void mode_c ( float destination_x, float destination_y)
     reachDestination =true;
   }
   else{
-          reachDestination = distance_control(destination_x, destination_y);
+          reachDestination = distance_control(destination_x, destination_y,desire_angle);
       }
        }    
   }
@@ -823,93 +822,10 @@ void loop()
     Serial.println("Current angle: " + String(current_angle));
     Serial.print('\n');
   }
-
-/*
- if (start){   
-    int headroom = 150; // prevent hitting the wall
-    //int increment = 300; in declearation
-
-    float length_r = 200, width_r = 200; //size of the rover[mm]
-    float length_c = 3600, width_c = 2400; //size of the court
-    int p = 2;
-
-    //period =  (width_c-2*headroom) / (3*width_r);
-    //bool go_straight_1 = false, go_straight_2 = false, go_straight_3 = false, go_straight_4 = true;
-    //bool turn_90_1 = false, turn_90_2 = false, turn_90_3 = false, turn_90_4 = false;
-
-    while(i < p){
-
-
-      if(!go_straight_1 && go_straight_4){
-
-        destination_x = increment;
-        destination_y = length_c-(500+length_r);
-        cout << "dstination(x,y) is (" << destination_x << ", " << destination_y << ")" << endl;
-        mode = 'C';
-        if(reachDestination){
-          go_straight_1 = true;
-          reachDestination = false;
-        }
-      }
-
-      else if(go_straight_1 && !go_straight_2){
-        
-        increment = increment + 300;
-        destination_x = increment;
-        destination_y = length_c-(500+length_r);
-        cout << "dstination(x,y) is (" << destination_x << ", " << destination_y << ")" << endl;
-        mode = 'C';
-        if(reachDestination){
-          go_straight_2 = true;
-          reachDestination = false;
-        }
-      }
-
-      else if(go_straight_2 && !go_straight_3){
-        
-        destination_x = increment;
-        destination_y = 500+length_r;
-        cout << "dstination(x,y) is (" << destination_x << ", " << destination_y << ")" << endl;
-        mode = 'C';
-        if(reachDestination){
-          go_straight_3 = true;
-          reachDestination = false;
-        }
-      }
-
-      else if(go_straight_3 && !go_straight_4){
-
-        if(i = period){
-          destination_x = 300;
-          destination_y = 300;
-          cout << "dstination(x,y) is (" << destination_x << ", " << destination_y << ")" << endl;
-          mode = 'C';
-          if(reachDestination){
-            go_straight_4 = true;
-            cout << "route finished" << endl;
-            return;
-          }
-        }
-
-        increment = increment + 300;
-        destination_x = 200+increment;
-        destination_y = 500+length_r;
-        cout << "dstination(x,y) is (" << destination_x << ", " << destination_y << ")" << endl;
-        mode = 'C';
-        if(reachDestination){
-          go_straight_4 = true;
-          reachDestination = false;
-          go_straight_1 = false;
-          i++;
-        }
-        
-      } 
-   }
-  }
-*/
-
+  if(mode=='C'){
 //bool reach=false;
     mode_c( dest_x, dest_y);
+  }
     Serial.print('\n');
     Serial.println("Final Current_x: " + String(current_x));
     Serial.println("Final Current_y: " + String(current_y));
