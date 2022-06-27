@@ -2,6 +2,54 @@
 #include <Robojax_L298N_DC_motor.h>
 #include <iostream>
 #include "SPI.h"
+//Below is the libraries used for ESP32 Control Part
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Arduino_JSON.h>
+//*******************************************************************************************************
+//Control Part
+const char* ssid = "Test";
+const char* password = "1234567890";
+
+//Your IP address or domain name with URL path
+const char* serverName = "http://146.169.212.155/get-temp.php?action=outputs_state";
+
+
+int Mode = 50;
+int* DriveMode = &Mode;
+//For Driving Mode, 10 is forward, 20 is backward, 30 is left, 40 is right.50 is stop.//
+
+String outputsState;
+
+String httpGETRequest(const char* serverName) {
+  WiFiClient client;
+  HTTPClient http;
+    
+  // Your IP address with path or Domain name with URL path 
+  http.begin(client, serverName);
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.GET();
+  
+  String payload = "{}"; 
+  
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+
+  return payload;
+}
+//Above is the control part
+//**********************************************************************************
+
 using namespace std;
 
 // motor 1 right wheel
@@ -762,7 +810,25 @@ void mode_c(float destination_x, float destination_y)
 ///////Set up///////
 void setup()
 {
-  Serial.begin(9600);
+  //************************************************************************************************
+  //Control Part
+  Serial.begin(115200);//It might need to be changed
+  
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) { 
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to WiFi network with IP Address: ");
+  Serial.println(WiFi.localIP());
+  
+  //Above is the control part
+  //*********************************************************************************************
+  
+  
+  // Serial.begin(9600);
 
   pinMode(PIN_SS, OUTPUT);
   pinMode(PIN_MISO, INPUT);
@@ -834,8 +900,89 @@ void loop()
   // if enabled this section produces a bar graph of the surface quality that can be used to focus the camera
   // also drawn is the average pixel value 0-63 and the shutter speed and the motion dx,dy.
 
-  Serial.println("mode = " + String(mode));
-  if (mode == 'V')
+  Serial.println("mode = " + String(*DriveMode));
+  //*****************************************************************************************************
+//Control Part
+// Check WiFi connection status
+   
+  if(WiFi.status()== WL_CONNECTED ){ 
+    outputsState = httpGETRequest(serverName);
+    //Serial.println(outputsState);
+    JSONVar myObject = JSON.parse(outputsState);
+    if (JSON.typeof(myObject) == "undefined") {
+        Serial.println("Parsing input failed!");
+        return;
+      }
+      // Serial.print("JSON object = ");
+      // Serial.println(myObject);
+    
+      // myObject.keys() can be used to get an array of all the keys in the object
+      JSONVar keys = myObject.keys();
+    //Below can be changed to design the instruction//
+      for (int i = 0; i < keys.length(); i++) {
+        JSONVar value = myObject[keys[i]];
+        //Serial.println(i);
+        if (i== (keys.length()-1) )
+        {
+        Serial.print("temp_id: ");
+        Serial.print(keys[i]);
+        Serial.print("temp_value: ");
+        Serial.println(value);
+        Serial.print("i is :");
+        Serial.println(i);
+        Serial.println(atoi(value));//Convert the JASON value into number
+        //Below using the pointer to change the mode variable
+        if (atoi(value) == 10)//Moving Forward
+        {
+          //int a = 10;
+          //int *DriveMode;
+          Mode = 10;
+          DriveMode = &Mode;
+          Serial.print("Moving Code changes as : ");
+          Serial.println(*DriveMode);
+        }else if (atoi(value) == 20)//Moving backward
+        {
+          //int b = 20;
+          //int* DriveMode = &b;
+          Mode = 20;
+          DriveMode = &Mode;
+          Serial.print("Moving Code Changes as : ");
+          Serial.println(*DriveMode);
+        }else if (atoi(value) == 30)//Moving Left
+        {
+          //int c = 30;
+          //int* DriveMode = &c;
+          Mode = 30;
+          DriveMode = &Mode;
+          Serial.print("Moving Code changes as : ");
+          Serial.println(*DriveMode);
+        }else if (atoi(value) == 40)//Moving Right
+        {
+          //int d = 40;
+          //int* DriveMode = &d;
+          Mode = 40;
+          DriveMode = &Mode;
+          Serial.print("Moving Code changes as : ");
+          Serial.println(*DriveMode);
+        }else if (atoi(value) == 50)//Moving Back
+        {
+          //int e = 50;
+          //int* DriveMode = &e;
+          Mode = 50;
+          DriveMode = &Mode;
+          
+        }
+        }
+      }
+    }  
+
+    else {
+      Serial.println("WiFi Disconnected");
+    }
+        //Above is the control part
+    //*********************************************************************************************  
+  
+  if (1)//if(* DriveMode== 50)
   {
     int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
     MD md;
@@ -851,7 +998,7 @@ void loop()
     Serial.print(',');
     Serial.print((int)md.dy);
     Serial.println(')');
-
+    Serial.print("Above is the sensor accuracy!");
     // Serial.println(md.max_pix);// maximum = 63
     delay(100);
 
@@ -877,40 +1024,45 @@ void loop()
 
     Serial.println("dy = " + String(dy_mm));
     Serial.print('\n');
-
+    Serial.print("Drivemode before Operation : ");
+    Serial.println(*DriveMode);
     delay(250);
-    if (motion == 'F')
+
+    //delay(10000);
+    if (*DriveMode == 10)//Move forward
     {
+      Serial.print('\n');
+      Serial.print("Moving Forward Successfully!");
       constant = 1;
       robot.rotate(motor1, 25, CCW);
       robot.rotate(motor2, 25, CCW);
     }
-    else if (motion == 'B')
+    else if (*DriveMode == 20)//Move backward
     {
       constant = -1;
       robot.rotate(motor1, 25, CW);
       robot.rotate(motor2, 25, CW);
     }
-    else if (motion == 'L')
+    else if (*DriveMode == 30)//Move left
     {
       constant = -1;
       robot.rotate(motor1, 25, CW);
       robot.rotate(motor2, 25, CCW);
     }
-    else if (motion == 'R')
+    else if (*DriveMode == 40)//Move right
     {
       constant = 1;
       robot.rotate(motor1, 25, CCW);
       robot.rotate(motor2, 25, CW);
     }
-    else if (motion == 'S')
+    else if (*DriveMode == 50)
     {
       robot.brake(1);
       robot.brake(2);
     }
   }
 
-  if (motion == 'F' || motion == 'B')
+  if (*DriveMode == 10 || *DriveMode == 20)
   {
     float moved_distance = sqrt(pow(dx_mm, 2) + pow(dy_mm, 2));
     current_y = current_y + (constant * moved_distance) * cos(current_angle);
@@ -919,7 +1071,7 @@ void loop()
     Serial.println("Current_x: " + String(current_x));
     Serial.print('\n');
   }
-  else if (motion == 'L' || motion == 'R')
+  else if (*DriveMode == 30 || *DriveMode == 40)
   {
     float moved_distance = sqrt(pow(dx_mm, 2) + pow(dy_mm, 2));
     float moved_angle = asin(moved_distance / (2 * r)) * 2 * (180 / 3.14159265359);
@@ -929,7 +1081,7 @@ void loop()
     Serial.println("Current angle: " + String(current_angle));
     Serial.print('\n');
   }
-  if (mode == 'C')
+  if (*DriveMode == 60)
   {
     delay(1000);
     // bool reach=false;
