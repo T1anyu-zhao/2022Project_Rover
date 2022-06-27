@@ -1,9 +1,29 @@
-11:59:23 **** Incremental Build of configuration Nios II for project D8M_Camera_Test ****
-make all 
-Info: Building ../D8M_Camera_Test_bsp/
-D:/intelFPGA_Lite/18.1/nios2eds/bin/gnu/H-x86_64-mingw32/bin/make --no-print-directory -C ../D8M_Camera_Test_bsp/
-[BSP build complete]
-[D8M_Camera_Test build complete]
+21:14:41 **** Build of configuration Nios II for project D8M_Camera_Test ****
+make mem_init_generate 
+Info: Compiling main.c to obj/default/main.o
+nios2-elf-gcc -xc -MP -MMD -c -I../D8M_Camera_Test_bsp//HAL/inc -I../D8M_Camera_Test_bsp/ -I../D8M_Camera_Test_bsp//drivers/inc  -pipe -D__hal__ -DALT_NO_INSTRUCTION_EMULATION -DALT_SINGLE_THREADED    -O0 -g -Wall   -mno-hw-div -mhw-mul -mno-hw-mulx -mgpopt=local  -o obj/default/main.o main.c
+In file included from terasic_includes.h:43:0,
+                 from I2C_core.h:11,
+                 from main.c:4:
+main.c: In function 'main':
+../D8M_Camera_Test_bsp//HAL/inc/io.h:73:61: error: expected expression before ')' token
+   __builtin_ldwio (__IO_CALC_ADDRESS_NATIVE ((BASE), (REGNUM)))
+                                                             ^
+../D8M_Camera_Test_bsp//HAL/inc/io.h:70:33: note: in definition of macro '__IO_CALC_ADDRESS_NATIVE'
+   ((void *)(((alt_u8*)BASE) + ((REGNUM) * (SYSTEM_BUS_WIDTH/8))))
+                                 ^
+main.c:260:23: note: in expansion of macro 'IORD'
+            int word = IORD(0x42000,                    );    //Get next word from message buffer
+                       ^
+main.c:278:20: warning: format '%x' expects argument of type 'unsigned int', but argument 2 has type 'alt_u32 {aka long unsigned int}' [-Wformat=]
+             printf("\nExposure = %x ", exposureTime);
+                    ^
+main.c:278:20: warning: format '%x' expects argument of type 'unsigned int', but argument 2 has type 'alt_u32 {aka long unsigned int}' [-Wformat=]
+main.c:283:20: warning: format '%x' expects argument of type 'unsigned int', but argument 2 has type 'alt_u32 {aka long unsigned int}' [-Wformat=]
+             printf("\nExposure = %x ", exposureTime);
+                    ^
+main.c:283:20: warning: format '%x' expects argument of type 'unsigned int', but argument 2 has type 'alt_u32 {aka long unsigned int}' [-Wformat=]
+make: *** [obj/default/main.o] Error 1
 
-11:59:24 Build Finished (took 1s.773ms)
+21:14:41 Build Finished (took 367ms)
 

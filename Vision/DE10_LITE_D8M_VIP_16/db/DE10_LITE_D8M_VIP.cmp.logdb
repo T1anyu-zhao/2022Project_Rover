@@ -1,4 +1,6 @@
 v1
+DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,Qsys:u0|EEE_IMGPROC:eee_imgproc_0|sobel:build_detect|lpm_mult:Mult4|mult_ens:auto_generated|mac_out2,
+DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,Qsys:u0|EEE_IMGPROC:eee_imgproc_0|sobel:build_detect|lpm_mult:Mult3|mult_ens:auto_generated|mac_out2,
 DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,Qsys:u0|EEE_IMGPROC:eee_imgproc_0|rgb2hsv:h1|lpm_mult:Mult2|mult_rns:auto_generated|mac_out2,
 DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,Qsys:u0|EEE_IMGPROC:eee_imgproc_0|rgb2hsv:h1|lpm_mult:Mult1|mult_rns:auto_generated|mac_out2,
 DSP_BALANCING_IMPLEMENTATION,DSP_BLOCKS,Qsys:u0|EEE_IMGPROC:eee_imgproc_0|rgb2hsv:h1|lpm_mult:Mult0|mult_rns:auto_generated|mac_out2,

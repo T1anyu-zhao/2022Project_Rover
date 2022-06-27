@@ -6,13 +6,10 @@
 #include "mipi_camera_config.h"
 #include "mipi_bridge_config.h"
 
-
 #include "auto_focus.h"
 
 #include <fcntl.h>
 #include <unistd.h>
-#include "altera_avalon_uart_regs.h"
-#include "altera_avalon_uart.h"
 
 //EEE_IMGPROC defines
 #define EEE_IMGPROC_MSG_START ('R'<<16 | 'B'<<8 | 'B')
@@ -257,7 +254,7 @@ int main()
 
        //Read messages from the image processor and print them on the terminal
        while ((IORD(0x42000,EEE_IMGPROC_STATUS)>>8) & 0xff) { 	//Find out if there are words to read
-           int word = IORD(0x42000,                    ); 			//Get next word from message buffer
+           int word = IORD(0x42000,EEE_IMGPROC_MSG); 			//Get next word from message buffer
     	   if (fwrite(&word, 4, 1, ser) != 1)
     		   printf("Error writing to UART");
            if (word == EEE_IMGPROC_MSG_START)				//Newline on message identifier
