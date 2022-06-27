@@ -50,7 +50,7 @@ server.get('/rover.png', function(req, res) {
 server.post("/datastream", function (req, res) {
     var click = req.body.data;
     res.send(click);
-    console.log(click);
+    console.log(click); 
 });
 
 console.log('Server is running on port 8000');

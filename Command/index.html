@@ -16,6 +16,8 @@
         <button class = "movement right" onclick = right()>&#129146</button>
         <button class = "movement left" onclick = left()>&#129144</button>
         <button class = "movement stop" onclick = stop()>STOP</button>
+        <button class = "automatic" onclick = automatic()>Auto</button>
+        <button class = "manual" onclick = manual()>Manual</button>
         <div class = "battery" id = "time"></div>
         <div class = "map">MAP</div>
         <div class = "stars"></div>
@@ -83,6 +85,32 @@
             function stop(){
                 // when stop button is clicked, the letter S is sent to the server
                 const data = 'S'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+
+            function automatic(){
+                // when stop button is clicked, the letter S is sent to the server
+                const data = 'A'
+                fetch('http://localhost:8000/datastream', {
+                    method: 'POST',
+                    body: JSON.stringify({ data }),
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+            }
+
+            function manual(){
+                // when stop button is clicked, the letter S is sent to the server
+                const data = 'M'
                 fetch('http://localhost:8000/datastream', {
                     method: 'POST',
                     body: JSON.stringify({ data }),
