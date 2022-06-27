@@ -118,7 +118,7 @@ int r = 130;
 const float pi = 3.14159265359;
 float error_angle = 0;
 int angle_90 = 90;
-bool turn;
+bool turn_done_45;
 
 
 int increment = 300;
@@ -130,6 +130,7 @@ int i = 0;
 long lastTrigger = 0;
 boolean startTimer = false;
 bool start = 1;
+int k = 1;
 
 const int STATE_DELAY = 1000;
 int randomState = 0;
@@ -579,11 +580,10 @@ bool rotate_constant(float desired_angle, float dy, float dx, float *current_an)
   Serial.println("Current angle: " + String(convertTodegree(angle))); // easier to read when convert to degree
   return false;
 }
-
+/*
 void rotate360()
 {
   bool turn;
-  bool turn360 = (convertTodegree(current_angle) != 360 + 5) && (convertTodegree(current_angle) != 360 - 5) ? false : true;
 
   if (angle_90<=360)
   {
@@ -640,7 +640,90 @@ void rotate360()
     }
   }
 }
+*/
+void rotate360()
+{ 
 
+  float min_reading = 1.5;
+  float orientation;
+  //bool turn_done_45;
+  float turn_angle;// k * 45,
+  float now_angle;
+
+  for(k; k < 10; ){
+
+    if(k == 1){
+      now_angle = current_angle;
+    }
+    if(k==9){
+
+      return;
+    }
+    //if (angle_45<=360){
+
+    while(!turn_done_45)
+    {//////////////////////////////////////////////////////////
+      turn_angle = now_angle + k*45;
+
+      Serial.println("turn_angle = " + String(turn_angle));
+      int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+      MD md;
+      mousecam_read_motion(&md);
+      for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+        Serial.print('*');
+      Serial.print(' ');
+      Serial.print((val * 100) / 351); // calculate average pixel
+      Serial.print(' ');
+      Serial.print(md.shutter);
+      Serial.print(" (");
+      Serial.print((int)md.dx);
+      Serial.print(',');
+      Serial.print((int)md.dy);
+      Serial.println(')');
+
+      // Serial.println(md.max_pix);// maximum = 63
+      delay(100);
+
+      distance_x = md.dx; // convTwosComp(md.dx);
+      distance_y = md.dy; // convTwosComp(md.dy);
+
+      total_x1 = total_x1 + distance_x;
+      total_y1 = total_y1 + distance_y;
+
+      total_x = (total_x1 / 157) * 10;
+      total_y = (total_y1 / 157) * 10;
+
+      dx_mm = (distance_x / 157) * 10; // convert distance to mm
+      dy_mm = (distance_y / 157) * 10;
+
+      Serial.print('\n');
+
+      Serial.println("Distance_x = " + String(total_x));
+
+      Serial.println("Distance_y = " + String(total_y));
+
+      Serial.println("dx = " + String(dx_mm));
+
+      Serial.println("dy = " + String(dy_mm));
+      Serial.print('\n');
+
+      delay(250);
+      turn_done_45 = rotate_constant(turn_angle, dy_mm, dx_mm, &current_angle);
+    }
+    ///////////////////////////////////////
+    if(turn_done_45){
+        //if(min_reading < radar_reading){
+          //orientation = current_angle;
+        //}
+      turn_done_45 = false;
+      k++;
+      delay(100);
+    }
+    
+  //}
+  }
+ 
+}
 void mode_c(float destination_x, float destination_y)
 {
   Serial.println("Destination_x = " + String(destination_x));
