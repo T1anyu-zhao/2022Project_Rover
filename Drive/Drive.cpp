@@ -91,21 +91,21 @@ Robojax_L298N_DC_motor robot(IN1, IN2, ENA, CHA, IN3, IN4, ENB, CHB);
 boolean reachDestination = false;
 float destination_x;
 float destination_y;
-float dest_x=50;
-float dest_y= 50;
+float dest_x = 50;
+float dest_y = 50;
 
 // Values for PID
 float kp = 0.35;
 float ki = 0.5;
 float kd = 0;
 float controlSignal = 0;
-float prevT = 0;     // for calculating delta t
-float prevE = 0;     // for calculating the derivative (edot)
-float eIntegral = 0; // integral error
-float currT = 0;     // time in the moment of calculation
-float deltaT = 0.0008;    // time difference
-float error = 0;     // error
-float edot = 0;      // derivative (de/dt)
+float prevT = 0;       // for calculating delta t
+float prevE = 0;       // for calculating the derivative (edot)
+float eIntegral = 0;   // integral error
+float currT = 0;       // time in the moment of calculation
+float deltaT = 0.0008; // time difference
+float error = 0;       // error
+float edot = 0;        // derivative (de/dt)
 char mode = 'C';
 char motion = 'S';
 int desire_x, desire_y;
@@ -117,12 +117,13 @@ float current_angle = 0;
 int r = 130;
 const float pi = 3.14159265359;
 float error_angle = 0;
+int angle_90 = 90;
 
 int increment = 300;
-//float destination_x, destination_y;
+// float destination_x, destination_y;
 bool go_straight_1 = false, go_straight_2 = false, go_straight_3 = false, go_straight_4 = true;
-int period; 
-int i=0;
+int period;
+int i = 0;
 // Values for timer
 long lastTrigger = 0;
 boolean startTimer = false;
@@ -131,7 +132,12 @@ bool start = 1;
 const int STATE_DELAY = 1000;
 int randomState = 0;
 
-enum States {STOP, ANGLE, DISTANCE};
+enum States
+{
+  STOP,
+  ANGLE,
+  DISTANCE
+};
 States State;
 
 ////FUNCTIONS////
@@ -283,49 +289,52 @@ int mousecam_frame_capture(byte *pdata)
   return ret;
 }
 
-float calculate_desried_angle(float destinationx, float destinationy){
-    float desire_a;
-    float change_x = destinationx - current_x;
-    float change_y = destinationy - current_y;
-    Serial.println("Change_x = " + String(change_x));
-    Serial.println("Change_y = " + String(change_y));
-    Serial.println("Current_x = " + String(current_x));
-    Serial.println("Current_y = " + String(current_y));
-    if (change_x > 0 && change_y > 0)
-      {
-        desire_a = atan(change_x / change_y); // 1st quadrant
-      }
-      else if (change_x < 0 && change_y > 0)
-      {
-        desire_a = atan(-change_x / change_y); // 2nd quadrant
-      }
-      else if (change_x < 0 && change_y < 0)
-      {
-        desire_a = atan(-change_y / -change_x) - 90*(pi/180); // 3rd quadrant
-      }
-      else if (change_x > 0 && change_y < 0)
-      {
-        desire_a = atan(-change_y / change_x) + 90*(pi/180); // 4th quadrant
-      }
-      else if (change_x > 0 && change_y == 0)
-      {
-        Serial.println("Rotate right 90");
-        desire_a =pi/2;// turn right 90 degree
-      }
-      else if (change_x < 0 && change_y == 0)
-      {
-        Serial.println("Rotate left 90");
-        desire_a =-pi/2; // turn left 90 degree
-      }
-      else if(change_x==0 && change_y >0){
-        desire_a = 0;//go straight
-      }
-      else if(change_x==0 && change_y <0){
-        desire_a = pi;//go straight
-      }
-      Serial.println("Desire angle = " + String(convertTodegree(desire_a)));
+float calculate_desried_angle(float destinationx, float destinationy)
+{
+  float desire_a;
+  float change_x = destinationx - current_x;
+  float change_y = destinationy - current_y;
+  Serial.println("Change_x = " + String(change_x));
+  Serial.println("Change_y = " + String(change_y));
+  Serial.println("Current_x = " + String(current_x));
+  Serial.println("Current_y = " + String(current_y));
+  if (change_x > 0 && change_y > 0)
+  {
+    desire_a = atan(change_x / change_y); // 1st quadrant
+  }
+  else if (change_x < 0 && change_y > 0)
+  {
+    desire_a = atan(-change_x / change_y); // 2nd quadrant
+  }
+  else if (change_x < 0 && change_y < 0)
+  {
+    desire_a = atan(-change_y / -change_x) - 90 * (pi / 180); // 3rd quadrant
+  }
+  else if (change_x > 0 && change_y < 0)
+  {
+    desire_a = atan(-change_y / change_x) + 90 * (pi / 180); // 4th quadrant
+  }
+  else if (change_x > 0 && change_y == 0)
+  {
+    Serial.println("Rotate right 90");
+    desire_a = pi / 2; // turn right 90 degree
+  }
+  else if (change_x < 0 && change_y == 0)
+  {
+    Serial.println("Rotate left 90");
+    desire_a = -pi / 2; // turn left 90 degree
+  }
+  else if (change_x == 0 && change_y > 0)
+  {
+    desire_a = 0; // go straight
+  }
+  else if (change_x == 0 && change_y < 0)
+  {
+    desire_a = pi; // go straight
+  }
+  Serial.println("Desire angle = " + String(convertTodegree(desire_a)));
 
-      return desire_a;
+  return desire_a;
 }
 
 float calculatePID(float error)
@@ -350,12 +359,12 @@ float calculatePID(float error)
   return controlSignal;
 }
 
-bool distance_control(int desired_x, int desired_y,int desire_a)
+bool distance_control(int desired_x, int desired_y, int desire_a)
 {
   float error_distance = sqrt(pow((current_x - desired_x), 2) + pow((current_y - desired_y), 2));
   float control_distance = calculatePID(error_distance);
   bool forward = (((current_y + error_distance * cos(desire_a) < desired_y + 5) && (current_y + error_distance * cos(desire_a) > desired_y - 5))) ? true : false;
-  int speed=0;
+  int speed = 0;
   // Determine speed and direction based on the value of the control signal
   // direction
   if (error_distance > 10 && !forward) // move backward
@@ -363,8 +372,8 @@ bool distance_control(int desired_x, int desired_y,int desire_a)
     Serial.println("Move backward");
     constant = -1; // move backwards, when calculate current position should minus the distance it traveld
     if (error_distance > 1000)
-    { // 
-    speed = fabs(control_distance) * 0.03;
+    { //
+      speed = fabs(control_distance) * 0.03;
       if (speed < 15)
       {
         speed = 15;
@@ -422,7 +431,7 @@ bool distance_control(int desired_x, int desired_y,int desire_a)
       robot.rotate(motor1, 40, CCW);
       robot.rotate(motor2, 40, CCW);
     }
-    
+
     else if (error_distance > 50)
     { // move backward with 40 speed when error distance in range 100-50
       robot.rotate(motor1, 30, CCW);
@@ -529,21 +538,112 @@ bool angle_control(float desired_angle, float dy, float dx, float *current_an)
   return false;
 }
 
-void rotate360(){
-  float desired_angle =pi/2;
-  bool turn_done;
-  while(desire_angle<2*pi){
-   turn_done = angle_control(convertTodegree(desire_angle), dy_mm, dx_mm, &current_angle);
-   desired_angle=desired_angle+pi;
+bool rotate_constant(float desired_angle, float dy, float dx, float *current_an)
+{
+  error_angle = desired_angle - convertTodegree(current_angle);
+  Serial.println("Error angle: " + String(error_angle));
+  Serial.println("Desire angle in angle control: " + String(desired_angle));
+  int speed = 15;
+  // Determine speed and direction based on the value of the control signal
+  // direction
+  if (error_angle >= 5) // turn right
+  {
+    constant = 1;
+    Serial.println("Rotate right");
+    robot.rotate(motor1, speed, CCW);
+    robot.rotate(motor2, speed, CW);
+  }
+  else if (error_angle <= -5) // turn left
+  {
+    constant = -1;
+    Serial.println("Rotate left");
+    robot.rotate(motor1, speed, CW);
+    robot.rotate(motor2, speed, CCW);
+  }
+  else // stop/break
+  {
+    // robot.brake(1);
+    // robot.brake(2);
+    return true; // angle_control done
+    Serial.println("Angle_rotate done");
+  }
+  float moved_distance = sqrt(pow(dx, 2) + pow(dy, 2));
+  float moved_angle = asin(moved_distance / (2 * r)) * 2;
+  float angle = *current_an;
+  angle = angle + constant * moved_angle;
+  angle = (angle > 3.14159265359) ? (angle - 3.14159265359) : angle;
+  angle = (angle < -3.14159265359) ? (angle + 3.14159265359) : angle;
+  *current_an = angle;
+  Serial.println("Current angle: " + String(convertTodegree(angle))); // easier to read when convert to degree
+  return false;
+}
+
+void rotate360()
+{
+  bool turn;
+  bool turn360 = (convertTodegree(current_angle) != 360 + 5) && (convertTodegree(current_angle) != 360 - 5) ? false : true;
+  if (!turn360)
+  {
+
+    while (!turn)
+    {
+      Serial.println("Desire angle = " + String(angle_90));
+      int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+      MD md;
+      mousecam_read_motion(&md);
+      for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+        Serial.print('*');
+      Serial.print(' ');
+      Serial.print((val * 100) / 351); // calculate average pixel
+      Serial.print(' ');
+      Serial.print(md.shutter);
+      Serial.print(" (");
+      Serial.print((int)md.dx);
+      Serial.print(',');
+      Serial.print((int)md.dy);
+      Serial.println(')');
+
+      // Serial.println(md.max_pix);// maximum = 63
+      delay(100);
+
+      distance_x = md.dx; // convTwosComp(md.dx);
+      distance_y = md.dy; // convTwosComp(md.dy);
+
+      total_x1 = total_x1 + distance_x;
+      total_y1 = total_y1 + distance_y;
+
+      total_x = (total_x1 / 157) * 10;
+      total_y = (total_y1 / 157) * 10;
+
+      dx_mm = (distance_x / 157) * 10; // convert distance to mm
+      dy_mm = (distance_y / 157) * 10;
+
+      Serial.print('\n');
+
+      Serial.println("Distance_x = " + String(total_x));
+
+      Serial.println("Distance_y = " + String(total_y));
+
+      Serial.println("dx = " + String(dx_mm));
+
+      Serial.println("dy = " + String(dy_mm));
+      Serial.print('\n');
+
+      delay(250);
+      turn = rotate_constant(angle_90, dy_mm, dx_mm, &current_angle);
+    }
+    if (turn){
+    angle_90 = angle_90 + 90;
+    }
   }
 }
 
-void mode_c ( float destination_x, float destination_y)
-  {
-    Serial.println("Destination_x = " + String(destination_x));
+void mode_c(float destination_x, float destination_y)
+{
+  Serial.println("Destination_x = " + String(destination_x));
 
   Serial.println("Destination_y = " + String(destination_y));
-     int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+  int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
   MD md;
   mousecam_read_motion(&md);
   for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
@@ -585,73 +685,77 @@ void mode_c ( float destination_x, float destination_y)
   Serial.print('\n');
 
   delay(250);
-    if (reachDestination)
-      {
-        robot.brake(1);
-        robot.brake(2);
-      }
-      else{
+  if (reachDestination)
+  {
+    robot.brake(1);
+    robot.brake(2);
+  }
+  else
+  {
     reachDestination = (destination_x != current_x || destination_y != current_y) ? false : true;
     bool turn_done;
-    bool check_block=false;
-    //rotate
-     desire_angle = calculate_desried_angle(destination_x,destination_y);
-     turn_done = angle_control(convertTodegree(desire_angle), dy_mm, dx_mm, &current_angle); 
+    bool check_block = false;
+    // rotate
+    desire_angle = calculate_desried_angle(destination_x, destination_y);
+    turn_done = angle_control(convertTodegree(desire_angle), dy_mm, dx_mm, &current_angle);
 
-      // move forward/backward
-       while(turn_done &&!reachDestination){
-         Serial.println("Turn done");
-         int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
-  MD md;
-  mousecam_read_motion(&md);
-  for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
-    Serial.print('*');
-  Serial.print(' ');
-  Serial.print((val * 100) / 351); // calculate average pixel
-  Serial.print(' ');
-  Serial.print(md.shutter);
-  Serial.print(" (");
-  Serial.print((int)md.dx);
-  Serial.print(',');
-  Serial.print((int)md.dy);
-  Serial.println(')');
+    // move forward/backward
+    while (turn_done && !reachDestination)
+    {
+      Serial.println("Turn done");
+      int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+      MD md;
+      mousecam_read_motion(&md);
+      for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+        Serial.print('*');
+      Serial.print(' ');
+      Serial.print((val * 100) / 351); // calculate average pixel
+      Serial.print(' ');
+      Serial.print(md.shutter);
+      Serial.print(" (");
+      Serial.print((int)md.dx);
+      Serial.print(',');
+      Serial.print((int)md.dy);
+      Serial.println(')');
 
-  // Serial.println(md.max_pix);// maximum = 63
-  delay(100);
+      // Serial.println(md.max_pix);// maximum = 63
+      delay(100);
 
-  distance_x = md.dx; // convTwosComp(md.dx);
-  distance_y = md.dy; // convTwosComp(md.dy);
+      distance_x = md.dx; // convTwosComp(md.dx);
+      distance_y = md.dy; // convTwosComp(md.dy);
 
-  total_x1 = total_x1 + distance_x;
-  total_y1 = total_y1 + distance_y;
+      total_x1 = total_x1 + distance_x;
+      total_y1 = total_y1 + distance_y;
 
-  total_x = (total_x1 / 157) * 10;
-  total_y = (total_y1 / 157) * 10;
+      total_x = (total_x1 / 157) * 10;
+      total_y = (total_y1 / 157) * 10;
 
-  dx_mm = (distance_x / 157) * 10; // convert distance to mm
-  dy_mm = (distance_y / 157) * 10;
+      dx_mm = (distance_x / 157) * 10; // convert distance to mm
+      dy_mm = (distance_y / 157) * 10;
 
-  Serial.print('\n');
+      Serial.print('\n');
 
-  Serial.println("Distance_x = " + String(total_x));
+      Serial.println("Distance_x = " + String(total_x));
 
-  Serial.println("Distance_y = " + String(total_y));
+      Serial.println("Distance_y = " + String(total_y));
 
-  Serial.println("dx = " + String(dx_mm));
+      Serial.println("dx = " + String(dx_mm));
 
-  Serial.println("dy = " + String(dy_mm));
-  Serial.print('\n');
+      Serial.println("dy = " + String(dy_mm));
+      Serial.print('\n');
 
-  delay(250);
-  if (check_block){
-    reachDestination =true;
-  }
-  else{
-          reachDestination = distance_control(destination_x, destination_y,desire_angle);
+      delay(250);
+      if (check_block)
+      {
+        reachDestination = true;
       }
-       }    
+      else
+      {
+        reachDestination = distance_control(destination_x, destination_y, desire_angle);
+      }
+    }
   }
-  }
+}
 ///////Set up///////
 void setup()
 {
@@ -661,6 +765,7 @@ void setup()
   pinMode(PIN_MISO, INPUT);
   pinMode(PIN_MOSI, OUTPUT);
   pinMode(PIN_SCK, OUTPUT);
+  pinMode(27, INPUT);
 
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV32);
@@ -726,52 +831,51 @@ void loop()
   // if enabled this section produces a bar graph of the surface quality that can be used to focus the camera
   // also drawn is the average pixel value 0-63 and the shutter speed and the motion dx,dy.
 
-
   Serial.println("mode = " + String(mode));
   if (mode == 'V')
   {
-     int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
-  MD md;
-  mousecam_read_motion(&md);
-  for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
-    Serial.print('*');
-  Serial.print(' ');
-  Serial.print((val * 100) / 351); // calculate average pixel
-  Serial.print(' ');
-  Serial.print(md.shutter);
-  Serial.print(" (");
-  Serial.print((int)md.dx);
-  Serial.print(',');
-  Serial.print((int)md.dy);
-  Serial.println(')');
+    int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+    MD md;
+    mousecam_read_motion(&md);
+    for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+      Serial.print('*');
+    Serial.print(' ');
+    Serial.print((val * 100) / 351); // calculate average pixel
+    Serial.print(' ');
+    Serial.print(md.shutter);
+    Serial.print(" (");
+    Serial.print((int)md.dx);
+    Serial.print(',');
+    Serial.print((int)md.dy);
+    Serial.println(')');
 
-  // Serial.println(md.max_pix);// maximum = 63
-  delay(100);
+    // Serial.println(md.max_pix);// maximum = 63
+    delay(100);
 
-  distance_x = md.dx; // convTwosComp(md.dx);
-  distance_y = md.dy; // convTwosComp(md.dy);
+    distance_x = md.dx; // convTwosComp(md.dx);
+    distance_y = md.dy; // convTwosComp(md.dy);
 
-  total_x1 = total_x1 + distance_x;
-  total_y1 = total_y1 + distance_y;
+    total_x1 = total_x1 + distance_x;
+    total_y1 = total_y1 + distance_y;
 
-  total_x = (total_x1 / 157) * 10;
-  total_y = (total_y1 / 157) * 10;
+    total_x = (total_x1 / 157) * 10;
+    total_y = (total_y1 / 157) * 10;
 
-  dx_mm = (distance_x / 157) * 10; // convert distance to mm
-  dy_mm = (distance_y / 157) * 10;
+    dx_mm = (distance_x / 157) * 10; // convert distance to mm
+    dy_mm = (distance_y / 157) * 10;
 
-  Serial.print('\n');
+    Serial.print('\n');
 
-  Serial.println("Distance_x = " + String(total_x));
+    Serial.println("Distance_x = " + String(total_x));
 
-  Serial.println("Distance_y = " + String(total_y));
+    Serial.println("Distance_y = " + String(total_y));
 
-  Serial.println("dx = " + String(dx_mm));
+    Serial.println("dx = " + String(dx_mm));
 
-  Serial.println("dy = " + String(dy_mm));
-  Serial.print('\n');
+    Serial.println("dy = " + String(dy_mm));
+    Serial.print('\n');
 
-  delay(250);
+    delay(250);
     if (motion == 'F')
     {
       constant = 1;
@@ -822,20 +926,22 @@ void loop()
     Serial.println("Current angle: " + String(current_angle));
     Serial.print('\n');
   }
-  if(mode=='C'){
-//bool reach=false;
-    mode_c( dest_x, dest_y);
+  if (mode == 'C')
+  {
+    // bool reach=false;
+    // mode_c( dest_x, dest_y);
+    rotate360();
+    int x = analogRead(27);
+    float voltage = x * 3.3 / 1023;
+    Serial.println("Radar voltage " + String(voltage));
   }
-    Serial.print('\n');
-    Serial.println("Final Current_x: " + String(current_x));
-    Serial.println("Final Current_y: " + String(current_y));
-    Serial.println("Final Current angle: " + String(convertTodegree(current_angle)));
-    //Serial.println("Rech destination: " + String(reach));
-    Serial.println("END");
-    Serial.print('\n');
-
-
+  Serial.print('\n');
+  Serial.println("Final Current_x: " + String(current_x));
+  Serial.println("Final Current_y: " + String(current_y));
+  Serial.println("Final Current angle: " + String(convertTodegree(current_angle)));
+  // Serial.println("Rech destination: " + String(reach));
+  Serial.println("END");
+  Serial.print('\n');
 
 #endif
 }
-
