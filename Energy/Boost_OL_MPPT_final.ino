@@ -99,16 +99,16 @@ void setup() {
           Power_now = vb * (-current_mA); //assume current ripple small? Do we need to get an average value for inductor/output current? How? Saving measurements to SD cards then take out?
           if (Power_now > Power_anc)
           { if (vb > voltage_anc)
-                pwm_out = pwm_out - delta;
-            else
                 pwm_out = pwm_out + delta;
+            else
+                pwm_out = pwm_out - delta;
           }
           else
           {
             if (vb > voltage_anc)
-                pwm_out = pwm_out + delta;
-            else
                 pwm_out = pwm_out - delta;
+            else
+                pwm_out = pwm_out + delta;
            }
             Power_anc = Power_now;
             voltage_anc = vb;
