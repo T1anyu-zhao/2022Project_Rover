@@ -7,34 +7,34 @@ var mysql = require('mysql');
 var http = require('http');
 var net = require('net');
 
-const con = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'toor',
-    database: 'rover'
-});
+// const con = mysql.createConnection({
+//     host: 'localhost',
+//     user: 'root',
+//     password: 'toor',
+//     database: 'rover'
+// });
 
-con.connect(function(err) {
-    if (err){ 
-        console.log("Could not connect to the database.");
-        throw err;
-    }
-    console.log("Connected to Database!");
-}); 
+// con.connect(function(err) {
+//     if (err){ 
+//         console.log("Could not connect to the database.");
+//         throw err;
+//     }
+//     console.log("Connected to Database!");
+// }); 
 
 // Client's browser performs GET request to ask server to display HTML web page
 server.get('/', function(req, res) {
-    res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/index.html');
+    res.sendFile('/Users/wq800/Desktop/Project_Submit/2022Project_Rover/Command/index.html');
 });
 
 // index.html requires styles.css so you have to add a GET request in node.js
 server.get('/styles.css', function(req, res) {
-    res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/styles.css');
+    res.sendFile('/Users/wq800/Desktop/Project_Submit/2022Project_Rover/Command/styles.css');
 });
 
 // index.html requires rover.png so you have to add a GET request in node.js
 server.get('/rover.png', function(req, res) {
-    res.sendFile('/Users/Owner/Documents/GitHub/2022Project_Rover/Command/rover.png');
+    res.sendFile('/Users/wq800/Desktop/Project_Submit/2022Project_Rover/Command/rover.png');
 });
 
 
