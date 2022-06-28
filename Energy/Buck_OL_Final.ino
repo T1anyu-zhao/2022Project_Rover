@@ -81,7 +81,7 @@ void setup() {
     CL_mode = digitalRead(3); // input from the OL_CL switch
     Boost_mode = digitalRead(2); // input from the Buck_Boost switch
 
-    if (!Boost_mode){//somehow !Boost_mode corresponds to Boost mode
+    if (!Boost_mode){//!Boost_mode corresponds to Boost mode, adapter board no connection
       if (CL_mode) { //Closed Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
           //Serial.println("enter loop");
@@ -90,7 +90,7 @@ void setup() {
           //Serial.println("enter loop");
       }
     }else{      
-      if (!CL_mode) { // Closed Loop Buck, not used
+      if (!CL_mode) { // Closed Loop Buck, not used, !CL_mode corresponds to CL mode, adapter board no connection
           //Serial.println("enter closed loop");
           pwm_modulate(0);
           
