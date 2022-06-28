@@ -20,8 +20,8 @@ float pwm_out;
 float vpd,vb,iL,current_mA,vin; // Measurement Variables
 unsigned int sensorValue0,sensorValue3;  // ADC sample values declaration
 float Ts=0.0008; //1.25 kHz control frequency. It's better to design the control period as integral multiple of switching period.
-float gain = 0.055;//0.075
-float gain_charging = 0.065;//0.085
+float gain = 0.075;
+float gain_charging = 0.085;
 float offset = 0;
 boolean Boost_mode = 0;
 boolean CL_mode = 0;
