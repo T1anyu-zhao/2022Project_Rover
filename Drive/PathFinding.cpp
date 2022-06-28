@@ -12,7 +12,7 @@ using namespace std;
 #define IN1 15
 #define IN2 2
 // motor 2 settings left wheel
-#define IN3 16
+#define IN3 14
 #define IN4 21
 #define ENB 22 // this pin must be PWM enabled pin if Arduino board is used
 #define CHB 1
@@ -28,7 +28,7 @@ const int CW = 1;  // do not change
 #define PIN_MOSI 23
 #define PIN_SCK 18
 
-#define PIN_MOUSECAM_RESET 17
+#define PIN_MOUSECAM_RESET 26
 #define PIN_MOUSECAM_CS 5
 
 #define ADNS3080_PIXELS_X 30
@@ -77,8 +77,8 @@ float total_y1 = 0;
 int x = 0;
 int y = 0;
 
-int a = 0;
-int b = 0;
+//int a = 0;
+//int b = 0;
 
 float distance_x = 0;
 float distance_y = 0;
@@ -127,16 +127,33 @@ boolean startTimer = false;
 // Values for the default path
 int g = 1, h = 1, j = 1, k = 1;
 int i = 1;
-bool go_straight_1 = false, go_straight_2 = false, go_straight_3 = false, go_straight_4 = true;
+bool go_straight_1 = false, go_straight_2 = false, go_straight_3 = false, go_straight_4 = false;
+bool go_straight_5 = false, go_straight_6 = false, go_straight_7 = true;
 int length_r = 200, width_r = 200;
-int length_c = 3600, width_c = 2400;
-int increment = 0;
+int length_c = 1000, width_c = 2400;
+int increment = 100;
 int p = 0;
 
-// Values for detection
+//Values for breaking bits
+int null, lg, dg, rd, pk, yw, be, bg;
+int dis_lg, dis_dg, dis_rd, dis_pk, dis_yw, dis_be,dis_bg; 
+int deg_lg, deg_dg, deg_rd, deg_pk, deg_yw, deg_be,deg_bg; 
+
+// Values for vision detection
 float angle_o, d_o, d_o_v;
 int op_from_v;
-bool update_destination_xy_1;
+int colour,  pre_colour;
+int dir;
+bool arrive;
+
+// Values for radar detection
+float a, b, c;
+float ax, ay;
+int angle_45 = 45;
+bool turn_done_45;
+//y1 = ax;
+//y2 = bx + c;
+
 
 // Values for the coordinate_list
 bool check_done;//also in mode 'C'
@@ -144,12 +161,12 @@ int follow = 1;
 typedef list<float> Coordinate_list;
 Coordinate_list coordinate_list;
 Coordinate_list::iterator it;
-float x1, x2, y_1, y2;
+float a1, a2, b1, b2;
 float del_x;
 float OH, base;
 float final_destination_x, final_destination_y;
 bool set_line_end = true;
-bool send_coordinate;
+bool send_coordinate, send_x, send_y;
 
 const int STATE_DELAY = 1000;
 int randomState = 0;
@@ -384,12 +401,14 @@ float calculatePID(float error)
 bool distance_control(int desired_x, int desired_y)
 {
     float error_distance = sqrt(pow((current_x - desired_x), 2) + pow((current_y - desired_y), 2));
+    cout << "error distance is: " << error_distance << endl;
+
     float control_distance = calculatePID(error_distance);
     bool forward = (((current_y + error_distance * cos(current_angle) < desired_y + 5) && (current_y + error_distance * cos(current_angle) > desired_y - 5))) ? true : false;
     int speed = 0;
     // Determine speed and direction based on the value of the control signal
     // direction
-    if (error_distance > 30 && !forward) // move backward
+    if (error_distance > 20 && !forward) // move backward
     {
         Serial.println("Move backward");
         constant = -1; // move backwards, when calculate current position should minus the distance it traveld
@@ -415,8 +434,8 @@ bool distance_control(int desired_x, int desired_y)
         }
         else if (error_distance > 50)
         { // move backward with 40 speed when error distance in range 100-50
-            robot.rotate(motor1, 30, CW);
-            robot.rotate(motor2, 30, CW);
+            robot.rotate(motor1, 25, CW);
+            robot.rotate(motor2, 25, CW);
         }
         else // move backward with 20 speed when error distance less than 50
         {
@@ -424,13 +443,13 @@ bool distance_control(int desired_x, int desired_y)
             robot.rotate(motor2, 18, CW);
         }
     }
-    else if (error_distance > 30 && forward) // move forward
+    else if (error_distance > 20 && forward) // move forward
     {
         Serial.println("Move forward");
         constant = 1; // move backwards, when calculate current position should minus the distance it traveld
-        if (error_distance > 900)
+        if (error_distance > 1000)
         { //>1000
-            speed = fabs(control_distance) * 0.03;
+            speed = fabs(control_distance) * 0.05;
             if (speed < 15)
             {
                 speed = 15;
@@ -440,7 +459,7 @@ bool distance_control(int desired_x, int desired_y)
         }
         else if (error_distance > 500)
         {
-            speed = fabs(control_distance) * 0.2;
+            speed = fabs(control_distance) * 0.5;
             if (speed < 15)
             {
                 speed = 15;
@@ -448,16 +467,11 @@ bool distance_control(int desired_x, int desired_y)
             robot.rotate(motor1, speed, CCW);
             robot.rotate(motor2, speed, CCW);
         }
-        else if (error_distance > 100)
-        {
-            robot.rotate(motor1, 40, CCW);
-            robot.rotate(motor2, 40, CCW);
-        }
 
         else if (error_distance > 50)
         { // move backward with 40 speed when error distance in range 100-50
-            robot.rotate(motor1, 30, CCW);
-            robot.rotate(motor2, 30, CCW);
+            robot.rotate(motor1, 25, CCW);
+            robot.rotate(motor2, 25, CCW);
         }
         else // move backward with 20 speed when error distance less than 50
         {
@@ -560,21 +574,327 @@ bool angle_control(float desired_angle, float dy, float dx, float *current_an)
     return false;
 }
 
-void rotate360()
+bool rotate_constant(float desired_angle, float dy, float dx, float *current_an)
 {
+  error_angle = desired_angle - convertTodegree(current_angle);
+  Serial.println("Error angle: " + String(error_angle));
+  Serial.println("Desire angle in angle control: " + String(desired_angle));
+  int speed = 15;
+  // Determine speed and direction based on the value of the control signal
+  // direction
+  if (error_angle >= 5) // turn right
+  {
+    constant = 1;
+    Serial.println("Rotate right");
+    robot.rotate(motor1, speed, CCW);
+    robot.rotate(motor2, speed, CW);
+  }
+  else if (error_angle <= -5) // turn left
+  {
+    constant = -1;
+    Serial.println("Rotate left");
+    robot.rotate(motor1, speed, CW);
+    robot.rotate(motor2, speed, CCW);
+  }
+  else // stop/break
+  {
+    // robot.brake(1);
+    // robot.brake(2);
+    return true; // angle_control done
+    Serial.println("Angle_rotate done");
+  }
+  float moved_distance = sqrt(pow(dx, 2) + pow(dy, 2));
+  float moved_angle = asin(moved_distance / (2 * r)) * 2;
+  float angle = *current_an;
+  angle = angle + constant * moved_angle;
+  angle = (angle > 3.14159265359) ? (angle - 3.14159265359) : angle;
+  angle = (angle < -3.14159265359) ? (angle + 3.14159265359) : angle;
+  *current_an = angle;
+  Serial.println("Current angle: " + String(convertTodegree(angle))); // easier to read when convert to degree
+  return false;
+}
+
+void rotate360()
+{ 
+
+  float min_reading = 1.5;
+  float orientation;
+  //bool turn_done_45;
+  float turn_angle;// k * 45,
+  float now_angle;
+
+  for(k; k < 10; ){
+
+    if(k == 1){
+      now_angle = current_angle;
+    }
+    if(k==9){
+
+      return;
+    }
+    //if (angle_45<=360){
+
+    while(!turn_done_45)
+    {//////////////////////////////////////////////////////////
+      turn_angle = now_angle + k*45;
+
+      Serial.println("turn_angle = " + String(turn_angle));
+      int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+      MD md;
+      mousecam_read_motion(&md);
+      for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+        Serial.print('*');
+      Serial.print(' ');
+      Serial.print((val * 100) / 351); // calculate average pixel
+      Serial.print(' ');
+      Serial.print(md.shutter);
+      Serial.print(" (");
+      Serial.print((int)md.dx);
+      Serial.print(',');
+      Serial.print((int)md.dy);
+      Serial.println(')');
+
+      // Serial.println(md.max_pix);// maximum = 63
+      delay(100);
+
+      distance_x = md.dx; // convTwosComp(md.dx);
+      distance_y = md.dy; // convTwosComp(md.dy);
+
+      total_x1 = total_x1 + distance_x;
+      total_y1 = total_y1 + distance_y;
+
+      total_x = (total_x1 / 157) * 10;
+      total_y = (total_y1 / 157) * 10;
+
+      dx_mm = (distance_x / 157) * 10; // convert distance to mm
+      dy_mm = (distance_y / 157) * 10;
+
+      Serial.print('\n');
+
+      Serial.println("Distance_x = " + String(total_x));
+
+      Serial.println("Distance_y = " + String(total_y));
+
+      Serial.println("dx = " + String(dx_mm));
+
+      Serial.println("dy = " + String(dy_mm));
+      Serial.print('\n');
+
+      delay(250);
+      turn_done_45 = rotate_constant(turn_angle, dy_mm, dx_mm, &current_angle);
+    }
+    ///////////////////////////////////////
+    if(turn_done_45){
+        //if(min_reading < radar_reading){
+          //orientation = current_angle;
+        //}
+      turn_done_45 = false;
+      k++;
+      delay(100);
+    }
+    
+  //}
+  }
+ 
+}
+void go_straight(float angle_o, float d_o_v){
+
+    d_o = d_o_v + 200;
+
+    del_x = sin((angle_o + current_angle)*2*pi/360)*d_o;
+    cout << "del_x: " << del_x << endl;
+    OH = cos(angle_o*2*pi/360)*d_o;
+    cout << "OH: " << OH << endl;
+
+    float safe_d = 200;
+    //desire angle becomes: convertTodegree(asin(change_x / change_y)) 
+    float safe_angle = convertTodegree(asin(safe_d / d_o));
+    
+    float divert_angle, desire_angle;
+    //if(current_angle < 0 && !go_straight_3 && (i != p)){// divert from left hand side
+      //divert_angle = (-1)*angle_o + safe_angle; // must be positive according to the setting scheme
+      //desire_angle = current_angle - divert_angle;
+    //}
+
+    //else{
+      divert_angle = angle_o + safe_angle;
+      desire_angle = current_angle + divert_angle;
+      cout << "desire_angle: " << desire_angle << endl;
+    //}
+ 
+    //float desire_angle = current_angle + divert_angle;
+    
+    float magnitude = OH / cos(divert_angle*2*pi/360);
+    cout << "magnitude: " << magnitude << endl;
+
+    float a1 = current_x + magnitude * sin(desire_angle*2*pi/360);
+    float a2 = current_y + magnitude * cos(desire_angle*2*pi/360);
+    cout << "a(" << a1 << ", " << a2 << ")" << endl;
+
+
+      while(!arrive)
+      {//////////////////////////////////////////////////////////
+        //next_x = now_x + magnitude*current_angle;
+
+        //Serial.println("turn_angle = " + String(turn_angle));
+        int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+        MD md;
+        mousecam_read_motion(&md);
+        for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+          Serial.print('*');
+        Serial.print(' ');
+        Serial.print((val * 100) / 351); // calculate average pixel
+        Serial.print(' ');
+        Serial.print(md.shutter);
+        Serial.print(" (");
+        Serial.print((int)md.dx);
+        Serial.print(',');
+        Serial.print((int)md.dy);
+        Serial.println(')');
+
+        // Serial.println(md.max_pix);// maximum = 63
+        delay(100);
+
+        distance_x = md.dx; // convTwosComp(md.dx);
+        distance_y = md.dy; // convTwosComp(md.dy);
+
+        total_x1 = total_x1 + distance_x;
+        total_y1 = total_y1 + distance_y;
+
+        total_x = (total_x1 / 157) * 10;
+        total_y = (total_y1 / 157) * 10;
+
+        dx_mm = (distance_x / 157) * 10; // convert distance to mm
+        dy_mm = (distance_y / 157) * 10;
+
+        Serial.print('\n');
+
+        Serial.println("Distance_x = " + String(total_x));
+
+        Serial.println("Distance_y = " + String(total_y));
+
+        Serial.println("dx = " + String(dx_mm));
+
+        Serial.println("dy = " + String(dy_mm));
+        Serial.print('\n');
+
+        delay(250);
+        arrive = distance_control(a1, a2);
+    }
+    
+  
+}
+
+void turn45(float angle_o)
+{ 
+  if(angle_o <= 0){
+    dir = -1;
+  }
+  else{
+    dir = 1;
+  }
+
+  //bool turn_done_45;
+  float turn_angle;// k * 45,
+  float now_angle;
+
+  for(h; h < 3; ){
+
+    if(h == 1){
+      now_angle = current_angle;
+    }
+    if(h==2){
+
+      return;
+    }
+    //if (angle_45<=360){
+
+    while(!turn_done_45)
+    {//////////////////////////////////////////////////////////
+      turn_angle = now_angle + dir*45;
+
+      Serial.println("turn_angle = " + String(turn_angle));
+      int val = mousecam_read_reg(ADNS3080_PIXEL_SUM); // find the avrage pixel value
+      MD md;
+      mousecam_read_motion(&md);
+      for (int i = 0; i < md.squal / 4; i++) // number of features = SQUAL register value *4
+        Serial.print('*');
+      Serial.print(' ');
+      Serial.print((val * 100) / 351); // calculate average pixel
+      Serial.print(' ');
+      Serial.print(md.shutter);
+      Serial.print(" (");
+      Serial.print((int)md.dx);
+      Serial.print(',');
+      Serial.print((int)md.dy);
+      Serial.println(')');
+
+      // Serial.println(md.max_pix);// maximum = 63
+      delay(100);
+
+      distance_x = md.dx; // convTwosComp(md.dx);
+      distance_y = md.dy; // convTwosComp(md.dy);
+
+      total_x1 = total_x1 + distance_x;
+      total_y1 = total_y1 + distance_y;
+
+      total_x = (total_x1 / 157) * 10;
+      total_y = (total_y1 / 157) * 10;
+
+      dx_mm = (distance_x / 157) * 10; // convert distance to mm
+      dy_mm = (distance_y / 157) * 10;
+
+      Serial.print('\n');
+
+      Serial.println("Distance_x = " + String(total_x));
+
+      Serial.println("Distance_y = " + String(total_y));
+
+      Serial.println("dx = " + String(dx_mm));
+
+      Serial.println("dy = " + String(dy_mm));
+      Serial.print('\n');
+
+      delay(250);
+      turn_done_45 = rotate_constant(turn_angle, dy_mm, dx_mm, &current_angle);
+    }
+    ///////////////////////////////////////
+    if(turn_done_45){
+        //if(min_reading < radar_reading){
+          //orientation = current_angle;
+        //}
+      turn_done_45 = false;
+      h++;
+      delay(100);
+    }
+  }
+ 
+}
+
+/*
+float rotate360(float& radar_reading)
+{   
+    float min_reading = 1.6;
+    float orientation;
     float desired_angle = pi / 2;
     bool turn_done;
     while (desire_angle < 2 * pi)
-    {
+    {   
+        if(min_reading < radar_reading){
+          orientation = current_angle;
+        }
         turn_done = angle_control(convertTodegree(desire_angle), dy_mm, dx_mm, &current_angle);
+        cout << "-------read radar output-------" << endl;
+        delay(100);
         desired_angle = desired_angle + pi;
     }
+    return orientation;
 }
-
-void rotate_v(bool found, bool detect_d_o, float &send_x, float &send_y){
+*/
+void rotate_v(bool center, bool detect_d_o, float &send_x, float &send_y){
   //this function is called when the obstacle is detected
   //but no reroute is required
-  if(found){
+  if(center){
     float d_o = detect_d_o;
     send_coordinate = 1;
     send_x = current_x + sin(current_angle);
@@ -596,6 +916,23 @@ void rotate_v(bool found, bool detect_d_o, float &send_x, float &send_y){
   }
 }
 
+int min_dis(int v[7][2]){
+  int m, min;
+  min = v[0][1];
+  for(m = 0; m < 7;m++){
+    if(v[m][1]<min){
+      min = v[m][1];
+    }
+  }
+  return m;
+}
+
+//deal with the input pack, identify whether it has been marked;
+bool check_mark(int vision_colour){
+
+  return true;
+}
+
 bool check_detect(int vision_output){
 
   //would be extended to check whether the obstacle has been marked
@@ -608,45 +945,45 @@ bool check_detect(int vision_output){
   }
 }
 
+//
+bool check_block(float angle_o, float d_o_v){
 
-bool check_block(int binary_output, float& angle_o, float& d_o_v){
 
-  switch(binary_output){
-    case 0:
-    //check_divert_done = true;
-    return false;
-
-    case 1:
-    update_destination_xy_1 = false;
-
-    //d_o and angle_o would be input
-    d_o = d_o_v + length_r;
-    //d_o_v must be larger than 30cm
+  //d_o and angle_o would be input
+  d_o = d_o_v + length_r;
+  //d_o_v must be larger than 30cm
+  //angle_o = angle_o*2*pi/360;
  
-    float del_x = sin(angle_o)*d_o_v;
-    float del_y = cos(angle_o)*d_o_v;
+  del_x = sin(angle_o*2*pi/360)*d_o_v;
+  //del_y = cos(angle_o)*d_o_v;
+  cout << del_x << "   "  << endl;
 
-    if(del_x < width_r) { // block the way
-      return true;
+  if(del_x < width_r) { // block the way
+    return true;
 
-    }
   }
-  return false;
+  else{
+    return false;
+  }
+
 }
 
-bool generate_coordinates(){
 
-  if(check_block(op_from_v, angle_o, d_o_v)){
+void generate_coordinates(){
+
+  //if(check_block(angle_o, d_o_v)){
 
     //float d_o;//  =; distance from the rover to the obstacle detected, given from the Vision
     //float angle_o;// =; angle between the current 'go straight' path and the line connected the rover and the obstacle
 
-    del_x = sin(angle_o + current_angle)*d_o;
-    OH = cos(angle_o)*d_o;
+    del_x = sin((angle_o + current_angle)*2*pi/360)*d_o;
+    cout << "del_x: " << del_x << endl;
+    OH = cos(angle_o*2*pi/360)*d_o;
+    cout << "OH: " << OH << endl;
 
     float safe_d = 200;
     //desire angle becomes: convertTodegree(asin(change_x / change_y)) 
-    float safe_angle = asin(safe_d / d_o);
+    float safe_angle = convertTodegree(asin(safe_d / d_o));
     
     float divert_angle, desire_angle;
     if(current_angle < 0 && !go_straight_3 && (i != p)){// divert from left hand side
@@ -657,28 +994,34 @@ bool generate_coordinates(){
     else{
       divert_angle = angle_o + safe_angle;
       desire_angle = current_angle + divert_angle;
+      cout << "desire_angle: " << desire_angle << endl;
     }
  
     //float desire_angle = current_angle + divert_angle;
     
-    float magnitude = OH / cos(divert_angle);
+    float magnitude = OH / cos(divert_angle*2*pi/360);
+    cout << "magnitude: " << magnitude << endl;
     float base = 2*OH;
     
     //add one intermediate point
-    float x1 = current_x + magnitude * sin(desire_angle);
-    float y_1 = current_y + magnitude * cos(desire_angle);
-
-    
+    float a1 = current_x + magnitude * sin(desire_angle*2*pi/360);
+    float a2 = current_y + magnitude * cos(desire_angle*2*pi/360);
+    cout << "a(" << a1 << ", " << a2 << ")" << endl;
+   
     //add second point to finish divesion
-    //float x2 = current_x + base * sin(current_angle);
-    //float y2 = current_y + base * cos(current_angle);
+    float b1 = current_x + base * sin(current_angle*2*pi/360);
+    float b2 = current_y + base * cos(current_angle*2*pi/360);
+    cout << "b(" << b1 << ", " << b2 << ")" << endl;
+    cout << "destination (" << destination_x << ", " << destination_y << ")" << endl;
+    cout << "-----------------" << endl;
 
-    return true;
+    coordinate_list.push_front(b2);
+    coordinate_list.push_front(b1);
+    coordinate_list.push_front(a2);
+    coordinate_list.push_front(a1);
     
     //int order_position;// which pair of coordinates 
-  }
-  
-  return false;
+  //}
 }
 
 void set_destination(){//执行设置目的地以及要求行动
@@ -698,7 +1041,8 @@ void set_destination(){//执行设置目的地以及要求行动
 
 void edit_list(){
 
-  if(check_done){
+  /*if(check_done){
+    cout << "check_done finished" << endl;
     it = coordinate_list.begin();
     coordinate_list.erase(it);
     advance(it,1);
@@ -714,33 +1058,37 @@ void edit_list(){
 
     return;
   
-  }
+  }*/
 
   float d2destination = sqrt(pow(destination_x-current_x,2) + pow(destination_y-current_y,2));
+  cout << "distance btwn current position and the destination is: " << d2destination << endl;
 
-  if(generate_coordinates){
+  /*if(generate_coordinates){
 
-    if(current_angle*(destination_x-final_destination_x)<0){
-      coordinate_list.push_front(y_1);
-      coordinate_list.push_front(x1);
-      //add only one coordinate
-      
-      it = coordinate_list.end();
-      coordinate_list.erase(it);
-      coordinate_list.erase(it);
-      //last coordinate deleted!
-      //then the rover get back to the normal path gradually
+    if(current_angle*(destination_x-b1)<0 || (b2-current_y)>(destination_y-current_y)){
+
       if(coordinate_list.empty()){
         reachDestination = true;
+        return;
       }
+
+      //erase the current destination
+      it = coordinate_list.begin();
+      coordinate_list.erase(it);
+      it = coordinate_list.begin();
+      coordinate_list.erase(it);
+      
+      // only insert one point in the front of the list
+      //assembles B1 ad C1 in the example
+      coordinate_list.push_front(a2);
+      coordinate_list.push_front(a1);
+
+      //last coordinate deleted!
+      //then the rover get back to the normal path gradually
+      
       return;
 
-    }
-
-    if((go_straight_1 || go_straight_3) && del_x < 30){
-      coordinate_list.push_front(y_1);
-      coordinate_list.push_front(x1);
-    }
+    }*/
 
     if(2*OH > d2destination){
       it = coordinate_list.begin();
@@ -749,11 +1097,14 @@ void edit_list(){
       coordinate_list.erase(it);
     }
 
-    coordinate_list.push_front(y2);
-    coordinate_list.push_front(x2);
-    coordinate_list.push_front(y_1);
-    coordinate_list.push_front(x1);
-  }
+    cout << "Edit the list." << endl;
+
+    coordinate_list.push_front(b2);
+    coordinate_list.push_front(b1);
+    coordinate_list.push_front(a2);
+    coordinate_list.push_front(a1);
+    cout << "push successfully" << endl;
+  //}
   return;
 }
 
@@ -764,11 +1115,13 @@ void edit_list(){
 void setup()
 {
     Serial.begin(9600);
+    Serial2.begin(115200);
 
     pinMode(PIN_SS, OUTPUT);
     pinMode(PIN_MISO, INPUT);
     pinMode(PIN_MOSI, OUTPUT);
     pinMode(PIN_SCK, OUTPUT);
+    //pinMode(33, INPUT);
 
     SPI.begin();
     SPI.setClockDivider(SPI_CLOCK_DIV32);
@@ -800,6 +1153,116 @@ byte frame[ADNS3080_PIXELS_X * ADNS3080_PIXELS_Y];
 /////Loop//////////
 void loop()
 {  
+
+  //for radar detection
+  
+  /*int radar = analogRead(33);
+  //float radar_reading = radar * 3.3/1023;
+  //cout << "radar reading: " << radar_reading << endl;
+
+
+  if(radar_reading>1.5){
+
+    cout << "radar detection" << endl;
+
+    if(radar_reading>1.8){
+      send_coordinate = 1;
+      send_x = current_x;
+      send_y = current_y;
+      cout << "send coordinate: (" << send_x << ", " << send_y << ")" << endl;
+    }
+
+    else{
+        if(a == 0){
+        a = rotate360(radar_reading);
+        ax = current_x;
+        ay = current_y;
+      }
+      else{
+        b = rotate360(radar_reading);
+        c = (current_y-ay) - (current_x-ax)*tan(current_angle);
+      }
+
+      if(a != 0 && b != 0){
+        send_coordinate = 1;
+        send_x = ax + c/(a-b);
+        send_y = ay + a*send_x;
+        cout << "send coordinate: (" << send_x << ", " << send_y << ")" << endl;
+        a = 0;
+        b = 0;
+      }
+    }
+
+    send_coordinate = 0;
+
+  }*/
+  
+
+  if(Serial2.available() > 0){
+    null = Serial2.read();
+
+    if(null == 0){
+      lg = Serial2.read();
+      dg = Serial2.read();
+      rd = Serial2.read();
+    }
+
+    else{
+      pk = null;
+      yw = Serial2.read();
+      be = Serial2.read();
+      bg = Serial2.read();
+    }
+  }
+
+  dis_lg = (lg / 16)*5;
+  deg_lg = ((lg % 16)-1)*5-20;
+
+  dis_dg = (dg / 16)*5;
+  deg_dg = ((dg % 16)-1)*5-20;
+
+  dis_rd = (rd / 16)*5;
+  deg_rd = ((rd % 16)-1)*5-20;
+
+  dis_pk = (pk / 16)*5;
+  deg_pk = ((pk % 16)-1)*5-20;
+
+  dis_yw = (yw / 16)*5;
+  deg_yw = ((yw % 16)-1)*5-20;
+
+  dis_be = (be / 16)*5;
+  deg_be = ((be % 16)-1)*5-20;
+
+  dis_bg = (bg / 16)*5;
+  deg_bg = ((bg % 16)-1)*5-20;
+
+  if(lg != 1){
+    int dis_lg = (lg/16)*5;
+    int deg_lg = ((lg%16)-1)*5 -20;
+  }
+
+  int v[7][2] = {
+    {dis_lg, deg_lg},
+    {dis_dg, deg_dg},
+    {dis_rd, deg_rd},
+    {dis_pk, deg_pk},
+    {dis_yw, deg_yw},
+    {dis_be, deg_be},
+    {dis_bg, deg_bg},
+  };
+
+  colour = min_dis(v);
+  if(colour != pre_colour){
+    d_o_v = v[min_dis(v)+1][1];
+    angle_o = v[min_dis(v)+1][2];
+  }
+  pre_colour = colour;
+  
+  cout << "the colour index is: " << colour << endl;
+  cout << "d_o_v is: " << d_o_v << endl;
+  cout << "angle_o is: " << angle_o << endl;
+  
+
 
   //--------------------------------set destination-----------------------------------
   /*main algorithm
@@ -844,150 +1307,101 @@ void loop()
     //mode_C;
     if(set_line_end){
 
-    if(!go_straight_1 && go_straight_4){
+      cout << "set line end point." << endl;
+      //length_c = 750;
+      for(int  o = 0; o < 1; o++){
+        coordinate_list.push_back(o*increment);
+        coordinate_list.push_back(length_c-700);
+        coordinate_list.push_back((o+1)*increment);
+        coordinate_list.push_back(length_c-700);
+        coordinate_list.push_back((o+1)*increment);
+        coordinate_list.push_back(0);
+        coordinate_list.push_back((o+2)*increment);
+        coordinate_list.push_back(0);
+        coordinate_list.push_back((o+2)*increment);
+        coordinate_list.push_back(length_c-700);
+        coordinate_list.push_back((o+3)*increment);
+        coordinate_list.push_back(length_c-700);
+        coordinate_list.push_back((o+3)*increment);
+        coordinate_list.push_back(0);
+        coordinate_list.push_back(0);
+        coordinate_list.push_back(0);
+        cout << "loop finished" << endl;  
 
-        cout << "go_straight_1------------------" << endl;
-        //cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-
-        if(g == 1){
-          cout << "g = " << g << endl;
-          destination_x = increment;
-          destination_y = length_c - length_r - 500;
- 
-          cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-
-          coordinate_list.push_front(destination_x);
-          coordinate_list.push_back(destination_y);
-
-          it = coordinate_list.begin();
-          destination_x = *it;
-          advance(it,follow);
-          destination_y = *it;
-
-          cout << "using iterator destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-          //g++;
-            go_straight_1 = true;
-            reachDestination = false;
-            coordinate_list.clear();
-          
-        }
-    
-
-        if(reachDestination){
-            go_straight_1 = true;
-            reachDestination = false;
-            // break;
-            coordinate_list.clear();
-            delay(250);
-        }
-
-
-    }
-
-    else if(go_straight_1 && !go_straight_2){
-
-        cout << "go_straight_2------------------" << endl;
-            
-        if(h == i){
-          increment = increment + 300;
-          destination_x = increment;
-          destination_y = length_c-500-length_r;
-
-          coordinate_list.push_front(destination_x);
-          coordinate_list.push_back(destination_y);
-
-          it = coordinate_list.begin();
-          destination_x = *it;
-          advance(it,follow);
-          destination_y = *it;
-
-          cout << "using iterator destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-          //g++;
-            go_straight_1 = true;
-            reachDestination = false;
-            coordinate_list.clear();
-        }
-
-
-        cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-        //mode = 'C';
-        if(reachDestination){
-          go_straight_2 = true;
-          reachDestination = false;
-          coordinate_list.clear();
-        }
-          h++;
-        }
-
-    else if(go_straight_2 && !go_straight_3){
-
-        cout << "go_straight_3------------------" << endl;
-            
-          if(j == 1){
-            destination_x = increment;
-            destination_y = 500+length_r; 
-          }
-          //mode = 'C';
-          cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-          if(reachDestination){
-            go_straight_3 = true;
-            reachDestination = false;
-            coordinate_list.clear();
-            delay(250);
-          }
-          j++;
       }
 
-    else if(go_straight_3 && !go_straight_4){
+      it = coordinate_list.begin();
+      destination_x = *it;
+      advance(it,1);
+      destination_y = *it;
 
-        cout << "go_straight_4------------------" << endl;
+      if(check_block(angle_o, d_o_v)){
 
-        if(i == p && j == 1){
-          destination_x = 0;
-          destination_y = 0; //origin
-        }
-          //mode = 'C';
-          cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-          if(reachDestination){
-            go_straight_4 = true;
-            cout << "Detection completed." << endl;
-            reachDestination = true;
-            robot.brake(1);
-            robot.brake(2);
-            delay(2500);
+          if(d_o_v > 250 && d_o_v < 350){
+            cout << "the obstacle blocks the loop" << endl;
+            turn45(angle_o);
+            go_straight(angle_o, d_o_v);
+            //a1,a2,b1,b2 are updated;
+            //edit_list();
+          }
+      }
+
+      /*
+      coordinate_list.push_back(0);
+      coordinate_list.push_back(50);
+      coordinate_list.push_back(30);
+      coordinate_list.push_back(50);
+      coordinate_list.push_back(30);
+      coordinate_list.push_back(0);
+      coordinate_list.push_back(60);
+      coordinate_list.push_back(0);
+      coordinate_list.push_back(60);
+      coordinate_list.push_back(50);
+      coordinate_list.push_back(90);
+      coordinate_list.push_back(50);
+      coordinate_list.push_back(90);
+      coordinate_list.push_back(0);
+      coordinate_list.push_back(0);
+      coordinate_list.push_back(0);*/
+
+      /*for(g; g<2; g++){
+        float angle_o = 10*2*3.1415926/360;
+        float d_o_v = 400;
+
+        cout << check_block(angle_o, d_o_v) << endl;
+
+        if(check_block(angle_o, d_o_v)){
+
+          if(d_o_v > 250 && d_o_v < 500){
+            cout << "the obstacle blocks the loop" << endl;
+            generate_coordinates();
+            //a1,a2,b1,b2 are updated;
+            //edit_list();
           }
         
+        }
+        else if(!check_block(angle_o,d_o_v)){
+          cout << "the obstacle does not block the loop" << endl;
+          rotate_v;
+        }
+    }*/
 
-          if(g == 1){
-            increment = increment + 300;
-            destination_x = increment;
-            destination_y = 500+length_r;
-            //mode = 'C';
-            cout << "destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
-            if(reachDestination){
-              go_straight_4 = true;
-              reachDestination = false;
-              go_straight_1 = false;
-              coordinate_list.clear();
-              delay(250);
-              h = g = j =1;
-              i++; 
-            } 
-            g++;
-            //return;
-            }
-      }
-  }
+
+      it = coordinate_list.begin();
+      destination_x = *it;
+      advance(it,1);
+      destination_y = *it;
+
+      cout << "In the list ----------destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
   
-  //check_detect(op_from_v);
-  //check_block(op_from_v, angle_o, d_o_v);
-  //bool generate_done = generate_coordinates;
-  //if(generate_done){
-   // edit_list;
-  //}
-  //set_destination;
-  //at the end of loop, the destination has been determined.
-  cout << " we set destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl; 
+      it = coordinate_list.end();
+      float final_destination_y = *--it;
+      float final_destination_x = *--it;
+      cout << "final desination is:" << final_destination_x << ", " << final_destination_y << endl;
+
+  }
+
+  cout << " ------- destination(x,y) is: (" << destination_x << ", " << destination_y << ")" << endl;
     
     Serial.println("Another loop");
     // if enabled this section produces a bar graph of the surface quality that can be used to focus the camera
@@ -1099,13 +1513,24 @@ void loop()
     
 
     if (mode == 'C')
-    {
+    {  cout << "j = " << j << endl;
       
       if (reachDestination)
         {
             robot.brake(1);
             robot.brake(2);
+            delay(50);
+            cout<< "reach destination." << endl;
+
+            //delete the first 2 elements
+            it = coordinate_list.begin();
+            coordinate_list.erase(it);
+            it = coordinate_list.begin();
+            coordinate_list.erase(it);
+            reachDestination = false;
+            j++;
         }
+
       else{
         reachDestination = (destination_x != current_x || destination_y != current_y) ? false : true;
         float desire_angle;
@@ -1160,8 +1585,15 @@ void loop()
             Serial.print('\n');
 
             delay(250);
-            reachDestination = distance_control(destination_x, destination_y);
-        
+              
+            //if (check_block){
+            
+              //break;
+           // }
+            //else{
+                    reachDestination = distance_control(destination_x, destination_y);
+                //}
+            
       
         }
       }
@@ -1170,6 +1602,7 @@ void loop()
         Serial.println("Final Current_y: " + String(current_y));
         Serial.println("Final Current_x: " + String(current_x));
         Serial.println("Final Current angle: " + String(convertTodegree(current_angle)));
+
     }
     
 #endif

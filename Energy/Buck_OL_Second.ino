@@ -16,12 +16,12 @@ INA219_WE ina219; // this is the instantiation of the library for the current se
 //SdVolume volume;
 //SdFile root;
 
-float pwm_out;
-float vpd,vb,iL,current_mA,vin; // Measurement Variables
+float pwm_out = 0.5;
+float vpd,vb,iL,current_mA,vin,vref; // Measurement Variables
 unsigned int sensorValue0,sensorValue3;  // ADC sample values declaration
 float Ts=0.0008; //1.25 kHz control frequency. It's better to design the control period as integral multiple of switching period.
-float gain = 0.075;
-float gain_charging = 0.085;
+float gain = 0.35;//0.075, or 0.55
+float gain_charging = 0.35;//0.085
 float offset = 0;
 boolean Boost_mode = 0;
 boolean CL_mode = 0;
@@ -81,30 +81,32 @@ void setup() {
     CL_mode = digitalRead(3); // input from the OL_CL switch
     Boost_mode = digitalRead(2); // input from the Buck_Boost switch
 
-    if (!Boost_mode){//!Boost_mode corresponds to Boost mode, adapter board no connection
+    if (!Boost_mode){
       if (CL_mode) { //Closed Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
-          //Serial.println("enter loop");
+          Serial.println("enter boost loop");
       }else{ // Open Loop Boost
           pwm_modulate(1); // This disables the Boost as we are not using this mode
-          //Serial.println("enter loop");
+          Serial.println("enter boost loop");
       }
     }else{      
-      if (!CL_mode) { // Closed Loop Buck, not used, !CL_mode corresponds to CL mode, adapter board no connection
-          //Serial.println("enter closed loop");
+      if (CL_mode) { // Closed Loop Buck, not used
+          Serial.println("enter closed loop");
           pwm_modulate(0);
           
       }else{ // Open Loop Buck, using this only
           //Serial.println("enter open loop");
+          pwm_modulate(pwm_out); // and send it out
           Serial.println(vpd); 
           Serial.println(vb);
           Serial.println(vin);
-          if(current_mA < 10){
-              pwm_out = gain*vin + offset;
-          }
-          else{
-              pwm_out = gain_charging*vin + offset;
-          }
+          Serial.println(vin-vref);
+          //if(vin < 5.2){
+              //pwm_out = 0.99;
+          //}
+          //else{
+          pwm_out = gain_charging*(vin-vref) + offset;
+          //}
           pwm_out = saturation(pwm_out,0.99,0.01);
           pwm_modulate(pwm_out); // and send it out
           Serial.println("pwm_out");
@@ -121,9 +123,8 @@ void setup() {
   }
 
   if (int_count == 1000) { // SLOW LOOP (1Hz) (for MPPT and relay operation)
-    Serial.println("!!!!enter slow loop");
-
-    if (vb < 3.5 || vb > 4.2) { //Checking for Error states (low or high battery input voltage) 
+    //Serial.println("!!!!enter slow loop");
+    if (vb > 4.2) { //Checking for Error states (low or high battery input voltage) vb < 3.5 ||
           digitalWrite(7,true); //turn on the red LED
           digitalWrite(9, HIGH); //relay off
           Serial.println("voltage out of range");
@@ -178,6 +179,7 @@ void sampling(){
   //vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
   vpd = sensorValue3 * (4.096 / 1023.0); // Convert the buck input voltage sensor reading to volts, connected through a potential divider
   vin = vpd/0.3708;//converting to actual buck input voltage
+  vref = 7;
 
   // The inductor current is in mA from the sensor so we need to convert to amps.
   iL = current_mA/1000.0;
